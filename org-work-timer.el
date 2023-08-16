@@ -6,7 +6,7 @@
 ;; Maintainer: Kristoffer Balintona <krisbalintona@gmail.com>
 ;; Created: 2023
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1"))
+;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://github.com/krisbalintona/org-work-timer
 ;; Keywords: convenience
 
@@ -52,7 +52,7 @@
 ;; TODO 2023-08-15: Make this a sequence of functions run in order until the
 ;; first non-nil value? This way, there can be fallbacks.
 (defcustom org-work-timer-work-duration-function
-  'org-work-timer-work-duration-basic
+  'org-work-timer-work-duration-pomodoro
   "This function calculates the duration for work timers (in seconds).
 
 Possible values are `org-work-timer-work-duration-basic' and a
@@ -62,7 +62,7 @@ seconds."
   :type 'symbol)
 
 (defcustom org-work-timer-break-duration-function
-  'org-work-timer-break-duration-basic
+  'org-work-timer-break-duration-pomodoro
   "This function calculates the duration for work timers (in seconds).
 
 Possible values are `org-work-timer-break-duration-basic',
@@ -84,8 +84,14 @@ function that returns the duration of a break in seconds."
   :type 'number)
 
 ;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-duration-fraction 0.12
-  "Fraction of work time that turns into break time."
+(defcustom org-work-timer-pomodoro-work-duration 1
+  "Default number of minutes for timers."
+  :group 'org-work-timer
+  :type 'number)
+
+;; TODO 2023-08-16: Change to be more sensible
+(defcustom org-work-timer-pomodoro-break-duration 0.25
+  "Default number of minutes for timers."
   :group 'org-work-timer
   :type 'number)
 
@@ -113,9 +119,13 @@ function that returns the duration of a break in seconds."
   "Mode line string for the current work timer.")
 (put 'org-work-timer-mode-line-string 'risky-local-variable t)
 
+(defvar org-work-timer-history nil
+  "Mode line string for the current work timer.")
+
 ;;; Functions
 
 ;;;; Duration functions
+;;;;; Basic
 (defun org-work-timer-work-duration-basic ()
   "Simply return `org-work-timer-default-work-duration' in seconds."
   (* 60 org-work-timer-default-work-duration))
@@ -124,38 +134,55 @@ function that returns the duration of a break in seconds."
   "Simply return `org-work-timer-default-break-duration' in seconds."
   (* 60 org-work-timer-default-break-duration))
 
-(defun org-work-timer-break-duration-fractional ()
-  "Simply return pp`org-work-timer-default-work-duration' in seconds."
-  (* 60 org-work-timer-default-work-duration))
+;;;;; Pomodoro
+(defun org-work-timer-work-duration-pomodoro ()
+  "Work duration according to the Pomodoro method."
+  (* 60 org-work-timer-pomodoro-work-duration))
+
+(defun org-work-timer-break-duration-pomodoro ()
+  "Break duration according to the Pomodoro method."
+  (* 60 org-work-timer-pomodoro-break-duration))
 
 ;;;; Timers
 (defun org-work-timer-tick ()
   "A callback that is invoked by the running timer each second.
-It checks whether we reached the duration of the current phase, when 't it
-invokes the handlers for finishing."
+It checks whether we reached the duration of the current phase,
+when 't it invokes the handlers for finishing."
   (org-work-timer-update-mode-line)
   (when (equal (floor (float-time (time-since org-work-timer-end-time))) 0)
     (org-work-timer-play-sound)))
 
 (defun org-work-timer-set-timer (type duration &optional start end)
-  "Create a timer and sets the appropriate variables.
-TYPE is a symbol representing the type of the timer. DURATION is in seconds.
+  "Create a timer and set the appropriate variables.
+TYPE is a symbol representing the type of the timer. DURATION is
+in seconds.
 
-If the optional arguments START and END are provided, `org-work-timer-start-time' and `org-work-timer-end-time' will be set manually."
+If the optional arguments START and END are provided,
+`org-work-timer-start-time' and `org-work-timer-end-time' will be
+set manually."
   (when (timerp org-work-timer-current-timer)
     (cancel-timer org-work-timer-current-timer))
-  (setq org-work-timer-start-time (or start (current-time))
+  (setq org-work-timer-start-time (or start (float-time (current-time)))
         org-work-timer-pause-time nil
         org-work-timer-current-timer-duration duration
-        org-work-timer-end-time (or end (time-add (current-time) duration))
+        org-work-timer-end-time (or end (float-time (time-add (current-time) duration)))
         org-work-timer-current-timer (run-with-timer t 1 'org-work-timer-tick)
-        org-work-timer-current-timer-type type)
+        org-work-timer-current-timer-type type
+        org-work-timer-history (append org-work-timer-history
+                                       `(,(list type (cons org-work-timer-start-time org-work-timer-end-time)))))
   (org-work-timer-update-mode-line))
+
+(defun org-work-timer--append-pause-to-history ()
+  "Add pause period to `org-work-timer-history'."
+  (when org-work-timer-pause-time
+    (setq org-work-timer-history (append org-work-timer-history
+                                         `(,(list 'pause (cons org-work-timer-pause-time
+                                                               (float-time (current-time)))))))))
 
 ;;;; Mode line
 (defun org-work-timer-update-mode-line ()
   "Set `org-work-timer-mode-line-string'."
-  (let ((running (time-since org-work-timer-start-time))
+  (let ((running (float-time (time-since org-work-timer-start-time)))
         (duration org-work-timer-current-timer-duration))
     (setq org-work-timer-mode-line-string
           (concat "[" (format "%s: %s/%s"
@@ -192,19 +219,30 @@ If the optional arguments START and END are provided, `org-work-timer-start-time
 (defun org-work-timer-pause-or-continue ()
   "Pause or continue the current timer."
   (interactive)
-  (if org-work-timer-pause-time
-      (let ((time-since-pause (time-since org-work-timer-pause-time)))
-        (org-work-timer-set-timer org-work-timer-current-timer-type
-                                  (funcall org-work-timer-work-duration-function)
-                                  (time-add org-work-timer-start-time time-since-pause)
-                                  (time-add org-work-timer-end-time time-since-pause)))
+  (cond
+   ((not (timerp org-work-timer-current-timer)) (user-error "No timer running!"))
+   (org-work-timer-pause-time
+    (let ((time-since-pause (time-since org-work-timer-pause-time)))
+      (org-work-timer--append-pause-to-history)
+      (org-work-timer-set-timer org-work-timer-current-timer-type
+                                (funcall org-work-timer-work-duration-function)
+                                (float-time (time-add org-work-timer-start-time time-since-pause))
+                                (float-time (time-add org-work-timer-end-time time-since-pause)))))
+   (t
     (when (timerp org-work-timer-current-timer)
       (cancel-timer org-work-timer-current-timer))
-    (setq org-work-timer-pause-time (current-time))))
+    ;; In the history, update the end time of the timer that is being paused
+    (setf (car (last org-work-timer-history))
+          (list (caar (last org-work-timer-history))
+                (cons (nth 1 (flatten-list (last org-work-timer-history)))
+                      (float-time (current-time)))))
+    (setq org-work-timer-pause-time (float-time (current-time))))))
 
 (defun org-work-timer-cycle-finish ()
   "Finish the current timer cycle."
   (interactive)
+  ;; If called when timer is paused, add period paused to history
+  (org-work-timer--append-pause-to-history)
   (pcase org-work-timer-current-timer-type
     ('break
      (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function)))
@@ -220,6 +258,8 @@ If the optional arguments START and END are provided, `org-work-timer-start-time
         org-work-timer-end-time nil
         org-work-timer-pause-time nil
         org-work-timer-current-timer-type nil
+        org-work-timer-current-timer nil
+        org-work-timer-history nil
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string)))
 
 (provide 'org-work-timer)
