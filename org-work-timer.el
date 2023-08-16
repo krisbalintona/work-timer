@@ -119,6 +119,12 @@ function that returns the duration of a break in seconds."
   "Mode line string for the current work timer.")
 (put 'org-work-timer-mode-line-string 'risky-local-variable t)
 
+;; OPTIMIZE 2023-08-16: Is there a better way to prevent the sound from being
+;; played more than once? Additionally, do we want the option to play the sound
+;; more than once?
+(defvar org-work-timer-overtime-p nil
+  "Predicate for whether running time exceeds timer duration.")
+
 (defvar org-work-timer-history nil
   "Mode line string for the current work timer.")
 
@@ -144,13 +150,29 @@ function that returns the duration of a break in seconds."
   (* 60 org-work-timer-pomodoro-break-duration))
 
 ;;;; Timers
+(defun org-work-timer-play-sound ()
+  "Play audio for a timer's end."
+  (let ((sound "/home/krisbalintona/.emacs.d/elpaca/builds/org-pomodoro/resources/bell.wav")
+        (args nil))                     ; FIXME 2023-08-15: Remove ARGS
+    (cond ((and (fboundp 'sound-wav-play) sound)
+           (sound-wav-play sound))
+          ((and org-pomodoro-audio-player sound)
+           (start-process-shell-command
+            "org-work-timer-audio-player" nil
+            (mapconcat 'identity
+                       `(,org-work-timer-audio-player
+                         ,@(delq nil (list args (shell-quote-argument (expand-file-name sound)))))
+                       " "))))))
+
 (defun org-work-timer-tick ()
   "A callback that is invoked by the running timer each second.
 It checks whether we reached the duration of the current phase,
 when 't it invokes the handlers for finishing."
   (org-work-timer-update-mode-line)
-  (when (equal (floor (float-time (time-since org-work-timer-end-time))) 0)
-    (org-work-timer-play-sound)))
+  (when (and (not org-work-timer-overtime-p)
+             (< (floor (float-time (time-subtract org-work-timer-end-time (current-time)))) 0))
+    (org-work-timer-play-sound)
+    (setq org-work-timer-overtime-p t)))
 
 (defun org-work-timer-set-timer (type duration &optional start end)
   "Create a timer and set the appropriate variables.
@@ -162,7 +184,8 @@ If the optional arguments START and END are provided,
 set manually."
   (when (timerp org-work-timer-current-timer)
     (cancel-timer org-work-timer-current-timer))
-  (setq org-work-timer-start-time (or start (float-time (current-time)))
+  (setq org-work-timer-overtime-p nil
+        org-work-timer-start-time (or start (float-time (current-time)))
         org-work-timer-pause-time nil
         org-work-timer-current-timer-duration duration
         org-work-timer-end-time (or end (float-time (time-add (current-time) duration)))
@@ -191,21 +214,6 @@ set manually."
                               (format-time-string org-work-timer-time-format duration))
                   "] ")))
   (force-mode-line-update t))
-
-;;;; Sound
-(defun org-work-timer-play-sound ()
-  "Play audio for a timer's end."
-  (let ((sound "/home/krisbalintona/.emacs.d/elpaca/builds/org-pomodoro/resources/bell.wav")
-        (args nil))                     ; FIXME 2023-08-15: Remove ARGS
-    (cond ((and (fboundp 'sound-wav-play) sound)
-           (sound-wav-play sound))
-          ((and org-pomodoro-audio-player sound)
-           (start-process-shell-command
-            "org-work-timer-audio-player" nil
-            (mapconcat 'identity
-                       `(,org-work-timer-audio-player
-                         ,@(delq nil (list args (shell-quote-argument (expand-file-name sound)))))
-                       " "))))))
 
 ;;; Commands
 
