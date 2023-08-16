@@ -31,12 +31,13 @@
 
 ;;; Code:
 
-;;;; Customizable variables
+;;; Customizable variables
 (defgroup org-work-timer nil
   "Org-work-timer customization."
   :tag "Org work timer"
   :group 'org-progress)
 
+;; TODO 2023-08-16: Change to be more sensible
 (defcustom org-work-timer-time-format "%M:%S"
   "Defines the format of the time representation in the modeline."
   :group 'org-work-timer
@@ -52,35 +53,43 @@
 ;; first non-nil value? This way, there can be fallbacks.
 (defcustom org-work-timer-work-duration-function
   'org-work-timer-work-duration-basic
-  "This function calculates the duration for work timers (in seconds)."
+  "This function calculates the duration for work timers (in seconds).
+
+Possible values are `org-work-timer-work-duration-basic' and a
+user-defined function that returns the duration of a break in
+seconds."
   :group 'org-work-timer
   :type 'symbol)
 
 (defcustom org-work-timer-break-duration-function
   'org-work-timer-break-duration-basic
-  "This function calculates the duration for work timers (in seconds)."
+  "This function calculates the duration for work timers (in seconds).
+
+Possible values are `org-work-timer-break-duration-basic',
+`org-work-timer-break-duration-fractional', and a user-defined
+function that returns the duration of a break in seconds."
   :group 'org-work-timer
   :type 'symbol)
 
-(defcustom org-work-timer-default-work-duration
-  0.25
+;; TODO 2023-08-16: Change to be more sensible
+(defcustom org-work-timer-default-work-duration 0.25
   "Default number of minutes for timers."
   :group 'org-work-timer
   :type 'number)
 
-(defcustom org-work-timer-default-break-duration
-  0.17
+;; TODO 2023-08-16: Change to be more sensible
+(defcustom org-work-timer-default-break-duration 0.17
   "Default number of minutes for timers."
   :group 'org-work-timer
   :type 'number)
 
-(defcustom org-work-timer-duration-fraction
-  0.12
+;; TODO 2023-08-16: Change to be more sensible
+(defcustom org-work-timer-duration-fraction 0.12
   "Fraction of work time that turns into break time."
   :group 'org-work-timer
   :type 'number)
 
-;;;; Internal variables
+;;; Internal variables
 
 (defvar org-work-timer-current-timer nil
   "The current work timer.")
@@ -100,34 +109,13 @@
 (defvar org-work-timer-end-time nil
   "The end time of the current work timer.")
 
-(defvar org-work-timer-mode-line ""
+(defvar org-work-timer-mode-line-string ""
   "Mode line string for the current work timer.")
-(put 'org-work-timer-mode-line 'risky-local-variable t)
+(put 'org-work-timer-mode-line-string 'risky-local-variable t)
 
-;;;; Functions
+;;; Functions
 
-(defun org-work-timer-play-sound-end ()
-  "Play audio for a timer's end."
-  (let ((sound "/home/krisbalintona/.emacs.d/elpaca/builds/org-pomodoro/resources/bell.wav")
-        (args nil))                     ; FIXME 2023-08-15: Remove ARGS
-    (cond ((and (fboundp 'sound-wav-play) sound)
-           (sound-wav-play sound))
-          ((and org-pomodoro-audio-player sound)
-           (start-process-shell-command
-            "org-work-timer-audio-player" nil
-            (mapconcat 'identity
-                       `(,org-work-timer-audio-player
-                         ,@(delq nil (list args (shell-quote-argument (expand-file-name sound)))))
-                       " "))))))
-
-(defun org-work-timer-tick ()
-  "A callback that is invoked by the running timer each second.
-It checks whether we reached the duration of the current phase, when 't it
-invokes the handlers for finishing."
-  (org-work-timer-update-mode-line)
-  (when (equal (floor (org-work-timer-remaining-seconds)) 0)
-    (org-work-timer-play-sound-end)))
-
+;;;; Duration functions
 (defun org-work-timer-work-duration-basic ()
   "Simply return `org-work-timer-default-work-duration' in seconds."
   (* 60 org-work-timer-default-work-duration))
@@ -136,25 +124,18 @@ invokes the handlers for finishing."
   "Simply return `org-work-timer-default-break-duration' in seconds."
   (* 60 org-work-timer-default-break-duration))
 
-(defun org-work-timer-calculate-duration-fractional ()
+(defun org-work-timer-break-duration-fractional ()
   "Simply return pp`org-work-timer-default-work-duration' in seconds."
   (* 60 org-work-timer-default-work-duration))
 
-(defun org-work-timer-remaining-seconds ()
-  "Return the number of seconds remaining in the current timer."
-  (float-time (time-since org-work-timer-end-time)))
-
-(defun org-work-timer-update-mode-line ()
-  "Set the modeline string."
-  (let ((running (time-since org-work-timer-start-time))
-        (duration org-work-timer-current-timer-duration))
-    (setq org-work-timer-mode-line
-          (concat "[" (format "%s: %s/%s"
-                              org-work-timer-current-timer-type
-                              (format-time-string org-work-timer-time-format running)
-                              (format-time-string org-work-timer-time-format duration))
-                  "] ")))
-  (force-mode-line-update t))
+;;;; Timers
+(defun org-work-timer-tick ()
+  "A callback that is invoked by the running timer each second.
+It checks whether we reached the duration of the current phase, when 't it
+invokes the handlers for finishing."
+  (org-work-timer-update-mode-line)
+  (when (equal (floor (float-time (time-since org-work-timer-end-time))) 0)
+    (org-work-timer-play-sound)))
 
 (defun org-work-timer-set-timer (type duration &optional start end)
   "Create a timer and sets the appropriate variables.
@@ -171,14 +152,42 @@ If the optional arguments START and END are provided, `org-work-timer-start-time
         org-work-timer-current-timer-type type)
   (org-work-timer-update-mode-line))
 
-;;;; Commands
+;;;; Mode line
+(defun org-work-timer-update-mode-line ()
+  "Set `org-work-timer-mode-line-string'."
+  (let ((running (time-since org-work-timer-start-time))
+        (duration org-work-timer-current-timer-duration))
+    (setq org-work-timer-mode-line-string
+          (concat "[" (format "%s: %s/%s"
+                              org-work-timer-current-timer-type
+                              (format-time-string org-work-timer-time-format running)
+                              (format-time-string org-work-timer-time-format duration))
+                  "] ")))
+  (force-mode-line-update t))
+
+;;;; Sound
+(defun org-work-timer-play-sound ()
+  "Play audio for a timer's end."
+  (let ((sound "/home/krisbalintona/.emacs.d/elpaca/builds/org-pomodoro/resources/bell.wav")
+        (args nil))                     ; FIXME 2023-08-15: Remove ARGS
+    (cond ((and (fboundp 'sound-wav-play) sound)
+           (sound-wav-play sound))
+          ((and org-pomodoro-audio-player sound)
+           (start-process-shell-command
+            "org-work-timer-audio-player" nil
+            (mapconcat 'identity
+                       `(,org-work-timer-audio-player
+                         ,@(delq nil (list args (shell-quote-argument (expand-file-name sound)))))
+                       " "))))))
+
+;;; Commands
 
 (defun org-work-timer-start ()
   "Start a work timer."
   (interactive)
   (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function))
   ;; Add to `global-mode-string'
-  (setq global-mode-string (append global-mode-string '(org-work-timer-mode-line))))
+  (setq global-mode-string (append global-mode-string '(org-work-timer-mode-line-string))))
 
 (defun org-work-timer-pause-or-continue ()
   "Pause or continue the current timer."
@@ -211,7 +220,7 @@ If the optional arguments START and END are provided, `org-work-timer-start-time
         org-work-timer-end-time nil
         org-work-timer-pause-time nil
         org-work-timer-current-timer-type nil
-        global-mode-string (remove 'org-work-timer-mode-line global-mode-string)))
+        global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string)))
 
 (provide 'org-work-timer)
 ;;; org-work-timer.el ends here
