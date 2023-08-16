@@ -50,14 +50,26 @@
 
 ;; TODO 2023-08-15: Make this a sequence of functions run in order until the
 ;; first non-nil value? This way, there can be fallbacks.
-(defcustom org-work-timer-calculate-duration-function
-  'org-work-timer-calculate-duration-basic
-  "The function that calculates the duration for timers in seconds."
+(defcustom org-work-timer-work-duration-function
+  'org-work-timer-work-duration-basic
+  "This function calculates the duration for work timers (in seconds)."
   :group 'org-work-timer
   :type 'symbol)
 
-(defcustom org-work-timer-default-duration
+(defcustom org-work-timer-break-duration-function
+  'org-work-timer-break-duration-basic
+  "This function calculates the duration for work timers (in seconds)."
+  :group 'org-work-timer
+  :type 'symbol)
+
+(defcustom org-work-timer-default-work-duration
   0.25
+  "Default number of minutes for timers."
+  :group 'org-work-timer
+  :type 'number)
+
+(defcustom org-work-timer-default-break-duration
+  0.17
   "Default number of minutes for timers."
   :group 'org-work-timer
   :type 'number)
@@ -73,8 +85,11 @@
 (defvar org-work-timer-current-timer nil
   "The current work timer.")
 
+(defvar org-work-timer-current-timer-type 'none
+  "The current work timer's type (e.g. work, break).")
+
 (defvar org-work-timer-current-timer-duration nil
-  "Duration of the current wor timer.")
+  "Duration of the current work timer.")
 
 (defvar org-work-timer-start-time nil
   "The start time of the current work timer.")
@@ -113,17 +128,17 @@ invokes the handlers for finishing."
   (when (equal (floor (org-work-timer-remaining-seconds)) 0)
     (org-work-timer-play-sound-end)))
 
-(defun org-work-timer-calculate-duration-basic ()
-  "Simply return `org-work-timer-default-duration' in seconds."
-  (* 60 org-work-timer-default-duration))
+(defun org-work-timer-work-duration-basic ()
+  "Simply return `org-work-timer-default-work-duration' in seconds."
+  (* 60 org-work-timer-default-work-duration))
+
+(defun org-work-timer-break-duration-basic ()
+  "Simply return `org-work-timer-default-break-duration' in seconds."
+  (* 60 org-work-timer-default-break-duration))
 
 (defun org-work-timer-calculate-duration-fractional ()
-  "Simply return pp`org-work-timer-default-duration' in seconds."
-  (* 60 org-work-timer-default-duration))
-
-(defun org-work-timer-running-seconds ()
-  "Return the number of seconds since the beginning of the current timer."
-  (time-since org-work-timer-start-time))
+  "Simply return pp`org-work-timer-default-work-duration' in seconds."
+  (* 60 org-work-timer-default-work-duration))
 
 (defun org-work-timer-remaining-seconds ()
   "Return the number of seconds remaining in the current timer."
@@ -131,44 +146,61 @@ invokes the handlers for finishing."
 
 (defun org-work-timer-update-mode-line ()
   "Set the modeline string."
-  (let ((running (org-work-timer-running-seconds))
+  (let ((running (time-since org-work-timer-start-time))
         (duration org-work-timer-current-timer-duration))
     (setq org-work-timer-mode-line
-          (concat "[" (format "%s/%s"
+          (concat "[" (format "%s: %s/%s"
+                              org-work-timer-current-timer-type
                               (format-time-string org-work-timer-time-format running)
                               (format-time-string org-work-timer-time-format duration))
                   "] ")))
   (force-mode-line-update t))
 
+(defun org-work-timer-set-timer (type duration &optional start end)
+  "Create a timer and sets the appropriate variables.
+TYPE is a symbol representing the type of the timer. DURATION is in seconds.
+
+If the optional arguments START and END are provided, `org-work-timer-start-time' and `org-work-timer-end-time' will be set manually."
+  (when (timerp org-work-timer-current-timer)
+    (cancel-timer org-work-timer-current-timer))
+  (setq org-work-timer-start-time (or start (current-time))
+        org-work-timer-pause-time nil
+        org-work-timer-current-timer-duration duration
+        org-work-timer-end-time (or end (time-add (current-time) duration))
+        org-work-timer-current-timer (run-with-timer t 1 'org-work-timer-tick)
+        org-work-timer-current-timer-type type)
+  (org-work-timer-update-mode-line))
+
 ;;;; Commands
 
 (defun org-work-timer-start ()
-  "Start a timer."
+  "Start a work timer."
   (interactive)
-  (when org-work-timer-current-timer (cancel-timer org-work-timer-current-timer))
-  (setq org-work-timer-start-time (current-time)
-        org-timer-pause-time nil
-        org-work-timer-current-timer-duration (funcall org-work-timer-calculate-duration-function)
-        org-work-timer-end-time (time-add (current-time) org-work-timer-current-timer-duration)
-        org-work-timer-current-timer (run-with-timer t 1 'org-work-timer-tick))
-
+  (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function))
   ;; Add to `global-mode-string'
-  (setq global-mode-string (append global-mode-string
-                                   '(org-work-timer-mode-line)))
-  (org-work-timer-update-mode-line))
+  (setq global-mode-string (append global-mode-string '(org-work-timer-mode-line))))
 
 (defun org-work-timer-pause-or-continue ()
-  "Pause current timer."
+  "Pause or continue the current timer."
   (interactive)
   (if org-work-timer-pause-time
       (let ((time-since-pause (time-since org-work-timer-pause-time)))
-        (setq org-work-timer-start-time (time-add org-work-timer-start-time time-since-pause)
-              org-work-timer-end-time (time-add org-work-timer-end-time time-since-pause)
-              org-work-timer-current-timer (run-with-timer 1 1 'org-work-timer-tick)
-              org-work-timer-pause-time nil))
+        (org-work-timer-set-timer org-work-timer-current-timer-type
+                                  (funcall org-work-timer-work-duration-function)
+                                  (time-add org-work-timer-start-time time-since-pause)
+                                  (time-add org-work-timer-end-time time-since-pause)))
     (when (timerp org-work-timer-current-timer)
       (cancel-timer org-work-timer-current-timer))
     (setq org-work-timer-pause-time (current-time))))
+
+(defun org-work-timer-cycle-finish ()
+  "Finish the current timer cycle."
+  (interactive)
+  (pcase org-work-timer-current-timer-type
+    ('break
+     (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function)))
+    (t
+     (org-work-timer-set-timer 'break (funcall org-work-timer-break-duration-function)))))
 
 (defun org-work-timer-end ()
   "End the current timer."
@@ -177,9 +209,9 @@ invokes the handlers for finishing."
     (cancel-timer org-work-timer-current-timer))
   (setq org-work-timer-start-time nil
         org-work-timer-end-time nil
-        org-timer-pause-time nil
-        global-mode-string (remove 'org-work-timer-mode-line global-mode-string))
-  (org-work-timer-update-mode-line))
+        org-work-timer-pause-time nil
+        org-work-timer-current-timer-type nil
+        global-mode-string (remove 'org-work-timer-mode-line global-mode-string)))
 
 (provide 'org-work-timer)
 ;;; org-work-timer.el ends here
