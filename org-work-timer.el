@@ -217,6 +217,7 @@ set manually."
 
 ;;; Commands
 
+;;;###autoload
 (defun org-work-timer-start ()
   "Start a work timer."
   (interactive)
@@ -224,6 +225,7 @@ set manually."
   ;; Add to `global-mode-string'
   (setq global-mode-string (append global-mode-string '(org-work-timer-mode-line-string))))
 
+;;;###autoload
 (defun org-work-timer-pause-or-continue ()
   "Pause or continue the current timer."
   (interactive)
@@ -246,6 +248,7 @@ set manually."
                       (float-time (current-time)))))
     (setq org-work-timer-pause-time (float-time (current-time))))))
 
+;;;###autoload
 (defun org-work-timer-cycle-finish ()
   "Finish the current timer cycle."
   (interactive)
@@ -257,6 +260,7 @@ set manually."
     (t
      (org-work-timer-set-timer 'break (funcall org-work-timer-break-duration-function)))))
 
+;;;###autoload
 (defun org-work-timer-end ()
   "End the current timer."
   (interactive)
