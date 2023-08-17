@@ -51,8 +51,10 @@
 
 ;; TODO 2023-08-15: Make this a sequence of functions run in order until the
 ;; first non-nil value? This way, there can be fallbacks.
+;; TODO 2023-08-16: Perhaps it'd be best if I allow this to be a function or a
+;; number
 (defcustom org-work-timer-work-duration-function
-  'org-work-timer-work-duration-pomodoro
+  'org-work-timer-work-duration-fractional
   "This function calculates the duration for work timers (in seconds).
 
 Possible values are `org-work-timer-work-duration-basic' and a
@@ -62,7 +64,7 @@ seconds."
   :type 'symbol)
 
 (defcustom org-work-timer-break-duration-function
-  'org-work-timer-break-duration-pomodoro
+  'org-work-timer-break-duration-fractional
   "This function calculates the duration for work timers (in seconds).
 
 Possible values are `org-work-timer-break-duration-basic',
@@ -98,6 +100,18 @@ function that returns the duration of a break in seconds."
 ;; TODO 2023-08-16: Change to be more sensible
 (defcustom org-work-timer-pomodoro-break-duration-long 0.5
   "Number of minutes for long (after four cycles) Pomodoro timers."
+  :group 'org-work-timer
+  :type 'number)
+
+;; TODO 2023-08-16: Change to be more sensible
+(defcustom org-work-timer-fractional-work-duration 0.5
+  "Number of minutes for fractional work timers."
+  :group 'org-work-timer
+  :type 'number)
+
+;; TODO 2023-08-16: Change to be more sensible
+(defcustom org-work-timer-fractional-break-duration-fraction 0.25
+  "Fraction of work time used to determine break timer."
   :group 'org-work-timer
   :type 'number)
 
@@ -161,6 +175,27 @@ function that returns the duration of a break in seconds."
     (if (eq (mod count 4) 0)
         (* 60 org-work-timer-pomodoro-break-duration-long)
       (* 60 org-work-timer-pomodoro-break-duration-short))))
+
+;;;;; Fractional
+(defun org-work-timer-work-duration-fractional ()
+  "Work duration according to the Pomodoro method."
+  (* 60 org-work-timer-fractional-work-duration))
+
+(defun org-work-timer-break-duration-fractional ()
+  "Break duration according to the Pomodoro method."
+  (let* ((history (cl-remove-if (lambda (elt) (equal (car elt) 'pause))
+                                org-work-timer-history))
+         (last-break (cl-find-if (lambda (elt) (equal (car elt) 'break))
+                                 (reverse history)))
+         (work-entries (if last-break
+                           (nthcdr (1+ (cl-position last-break history)) history)
+                         history))
+         (work-time-total-seconds 0))
+    (dolist (work-entry work-entries)
+      (setq work-time-total-seconds (+ work-time-total-seconds
+                                       (float-time (time-subtract (cdadr work-entry)
+                                                                  (caadr work-entry))))))
+    (* work-time-total-seconds org-work-timer-fractional-break-duration-fraction)))
 
 ;;;; Timers
 (defun org-work-timer-play-sound ()
@@ -243,7 +278,6 @@ set manually."
 
 ;;; Commands
 ;;;###autoload
->>>>>>> 8571b7b (fixup! feat: implement Pomodoro method style timers)
 (defun org-work-timer-start ()
   "Start a work timer."
   (interactive)
