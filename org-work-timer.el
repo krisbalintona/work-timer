@@ -51,8 +51,8 @@
 
 ;; TODO 2023-08-15: Make this a sequence of functions run in order until the
 ;; first non-nil value? This way, there can be fallbacks.
-;; TODO 2023-08-16: Perhaps it'd be best if I allow this to be a function or a
-;; number
+;; TODO 2023-08-16: Perhaps it'd be best if I allow the user to set this to
+;; either a function or a number
 (defcustom org-work-timer-work-duration-function
   'org-work-timer-work-duration-fractional
   "This function calculates the duration for work timers (in seconds).
@@ -117,11 +117,16 @@ function that returns the duration of a break in seconds."
 
 ;;; Internal variables
 
+;; FIXME 2023-08-21: Make variable names consistent
+
 (defvar org-work-timer-current-timer nil
   "The current work timer.")
 
-(defvar org-work-timer-current-timer-type 'none
-  "The current work timer's type (e.g. work, break).")
+(defvar org-work-timer-current-timer-type nil
+  "The type of the current timer (e.g. work, break).")
+
+(defvar org-work-timer-current-timer-pauses nil
+  "A list of conses, each being a start and end time of a pause.")
 
 (defvar org-work-timer-current-timer-duration nil
   "Duration of the current work timer.")
@@ -144,6 +149,23 @@ function that returns the duration of a break in seconds."
 
 ;;; Functions
 ;;;; Duration functions
+
+(defun org-work-timer-elapsed-without-pauses (history-entry)
+  "Given HISTORY-ENTRY, return time elapsed excluding pauses."
+  (let ((total-elapsed
+         (- (plist-get history-entry :end)
+            (plist-get history-entry :start)))
+        (time-paused
+         (apply #'+ (mapcar (lambda (elt)
+                              (- (or (plist-get elt :pause-end)
+                                     ;; REVIEW 2023-08-22: Is it okay to ad-hoc
+                                     ;; use `current-time' if :pause-end is nil
+                                     ;; (i.e. we're currently in a pause)?
+                                     (float-time (current-time)))
+                                 (plist-get elt :pause-start)))
+                            (plist-get history-entry :pauses)))))
+    (- total-elapsed time-paused)))
+
 ;;;;; Basic
 (defun org-work-timer-work-duration-basic ()
   "Simply return `org-work-timer-default-work-duration' in seconds."
@@ -160,21 +182,12 @@ function that returns the duration of a break in seconds."
 
 (defun org-work-timer-break-duration-pomodoro ()
   "Break duration according to the Pomodoro method."
-  ;; Remove all "pause" entries in `org-work-timer-history'. Then return a
-  ;; version of the history that is "collapsed." For instance, turn ("1" "1" "2"
-  ;; "1" "2" "2") into ("1" "2" "1" "2")
-  (let* ((history (cl-remove-if (lambda (elt) (equal (car elt) 'pause))
-                                org-work-timer-history))
-         (result (list (car history)))
-         (count))
-    (dolist (element (cdr history))
-      (unless (equal (caar result) (car element))
-        (setq result (cons element result))))
-    ;; Note that result is reversed in the process
-    (setq count (cl-count-if (lambda (elt) (equal (car elt) 'work)) result))
-    (if (eq (mod count 4) 0)
-        (* 60 org-work-timer-pomodoro-break-duration-long)
-      (* 60 org-work-timer-pomodoro-break-duration-short))))
+  (if (zerop (mod (cl-count-if
+                   (lambda (elt) (eq (plist-get elt :type) 'work))
+                   org-work-timer-history)
+                  4))
+      (* 60 org-work-timer-pomodoro-break-duration-long)
+    (* 60 org-work-timer-pomodoro-break-duration-short)))
 
 ;;;;; Fractional
 (defun org-work-timer-work-duration-fractional ()
@@ -183,45 +196,29 @@ function that returns the duration of a break in seconds."
 
 (defun org-work-timer-break-duration-fractional ()
   "Break duration according to the Pomodoro method."
-  (let* ((history (cl-remove-if (lambda (elt) (equal (car elt) 'pause))
-                                org-work-timer-history))
-         (last-break (cl-find-if (lambda (elt) (equal (car elt) 'break))
-                                 (reverse history)))
-         (work-entries (if last-break
-                           (nthcdr (1+ (cl-position last-break history)) history)
-                         history))
-         (work-time-total-seconds 0))
-    (dolist (work-entry work-entries)
-      (setq work-time-total-seconds (+ work-time-total-seconds
-                                       (float-time (time-subtract (cdadr work-entry)
-                                                                  (caadr work-entry))))))
-    (* work-time-total-seconds org-work-timer-fractional-break-duration-fraction)))
+  (let* ((work-period (car (last org-work-timer-history)))
+         (elapsed-sum (- (plist-get work-period :end) (plist-get work-period :start)))
+         (pause-sum
+          (apply #'+ (cl-loop for pause in (plist-get work-period :pauses)
+                              collect (- (plist-get pause :pause-end)
+                                         (plist-get pause :pause-start))))))
+    (* (- elapsed-sum pause-sum) org-work-timer-fractional-break-duration-fraction)))
 
 ;;;; Timers
-(defun org-work-timer-play-sound ()
-  "Play audio for a timer's end."
-  ;; FIXME 2023-08-16: Change this sound and add an user option for it
-  (let ((sound "/home/krisbalintona/.emacs.d/elpaca/builds/org-pomodoro/resources/bell.wav")
-        (args nil))                     ; FIXME 2023-08-15: Remove ARGS
-    (cond ((and (fboundp 'sound-wav-play) sound)
-           (sound-wav-play sound))
-          ((and org-pomodoro-audio-player sound)
-           (start-process-shell-command
-            "org-work-timer-audio-player" nil
-            (mapconcat 'identity
-                       `(,org-work-timer-audio-player
-                         ,@(delq nil (list args (shell-quote-argument (expand-file-name sound)))))
-                       " "))))))
-
 (defun org-work-timer-tick ()
   "A callback that is invoked by the running timer each second.
 It checks whether we reached the duration of the current phase,
 when 't it invokes the handlers for finishing."
   (org-work-timer-update-mode-line)
-  (when (equal (floor (float-time (time-since org-work-timer-end-time))) 0)
+  (when (equal (floor (- org-work-timer-current-timer-duration
+                         (org-work-timer-elapsed-without-pauses
+                          (list :start org-work-timer-start-time
+                                :end (float-time (current-time))
+                                :pauses org-work-timer-current-timer-pauses))))
+               0)
     (org-work-timer-play-sound)))
 
-(defun org-work-timer-set-timer (type duration &optional start end)
+(defun org-work-timer-set-timer (type duration)
   "Create a timer and set the appropriate variables.
 TYPE is a symbol representing the type of the timer. DURATION is
 in seconds.
@@ -231,44 +228,41 @@ If the optional arguments START and END are provided,
 set manually."
   (when (timerp org-work-timer-current-timer)
     (cancel-timer org-work-timer-current-timer))
-  (setq org-work-timer-start-time (or start (float-time (current-time)))
-        org-work-timer-pause-time nil
+  (setq org-work-timer-current-timer-type type
+        org-work-timer-start-time (float-time (current-time))
         org-work-timer-current-timer-duration duration
-        org-work-timer-end-time (or end (float-time (time-add (current-time) duration)))
-        org-work-timer-current-timer (run-with-timer t 1 'org-work-timer-tick)
-        org-work-timer-current-timer-type type
-        org-work-timer-history (append org-work-timer-history
-                                       `(,(list type (cons org-work-timer-start-time org-work-timer-end-time)))))
+        org-work-timer-end-time (float-time (time-add (current-time) duration))
+        org-work-timer-current-timer-pauses nil
+        org-work-timer-pause-time nil
+        org-work-timer-current-timer (run-with-timer t 1 'org-work-timer-tick))
   (org-work-timer-update-mode-line))
-
-(defun org-work-timer--append-pause-to-history ()
-  "Add pause period to `org-work-timer-history'."
-  (when org-work-timer-pause-time
-    (setq org-work-timer-history (append org-work-timer-history
-                                         `(,(list 'pause (cons org-work-timer-pause-time
-                                                               (float-time (current-time)))))))))
 
 ;;;; Mode line
 (defun org-work-timer-update-mode-line ()
   "Set `org-work-timer-mode-line-string'."
-  (let ((running (float-time (time-since org-work-timer-start-time)))
-        (duration org-work-timer-current-timer-duration))
+  (let ((running (org-work-timer-elapsed-without-pauses
+                  (list :start org-work-timer-start-time
+                        :end (float-time (current-time))
+                        :pauses org-work-timer-current-timer-pauses)))
+        (duration
+         (format-time-string org-work-timer-time-format org-work-timer-current-timer-duration)))
     (setq org-work-timer-mode-line-string
           (concat "[" (format "%s: %s/%s"
                               org-work-timer-current-timer-type
                               (format-time-string org-work-timer-time-format running)
-                              (format-time-string org-work-timer-time-format duration))
+                              duration)
                   "] ")))
   (force-mode-line-update t))
 
 ;;;; Sound
 (defun org-work-timer-play-sound ()
   "Play audio for a timer's end."
+  ;; FIXME 2023-08-16: Change this sound and add an user option for it
   (let ((sound "/home/krisbalintona/.emacs.d/elpaca/builds/org-pomodoro/resources/bell.wav")
-        (args nil))                     ; FIXME 2023-08-15: Remove ARGS
+        (args nil))                     ; FIXME 2023-08-15: Remove ARGS?
     (cond ((and (fboundp 'sound-wav-play) sound)
            (sound-wav-play sound))
-          ((and org-pomodoro-audio-player sound)
+          ((and org-work-timer-audio-player sound)
            (start-process-shell-command
             "org-work-timer-audio-player" nil
             (mapconcat 'identity
@@ -285,8 +279,6 @@ set manually."
   ;; Add to `global-mode-string'
   (setq global-mode-string (append global-mode-string '(org-work-timer-mode-line-string))))
 
-;; TODO 2023-08-16: Instead of adding an entry in the history for every pause,
-;; should I instead add metadata for the entry that was paused?
 ;;;###autoload
 (defun org-work-timer-pause-or-continue ()
   "Pause or continue the current timer."
@@ -294,32 +286,36 @@ set manually."
   (cond
    ((not (timerp org-work-timer-current-timer)) (user-error "No timer running!"))
    (org-work-timer-pause-time
-    (let ((time-since-pause (time-since org-work-timer-pause-time)))
-      (org-work-timer--append-pause-to-history)
-      ;; FIXME 2023-08-16: Since we are creating a new timer, if the timer is
-      ;; continued beyond the expected duration, the timer sound will play. Is
-      ;; this desirable behavior? Perhaps it is best to create a user option
-      ;; that determines the behavior.
-      (org-work-timer-set-timer org-work-timer-current-timer-type
-                                (funcall org-work-timer-work-duration-function)
-                                (float-time (time-add org-work-timer-start-time time-since-pause))
-                                (float-time (time-add org-work-timer-end-time time-since-pause)))))
+    ;; Move back `org-work-timer-end-time' for how long timer was paused
+    (setq org-work-timer-end-time (float-time
+                                   (time-add org-work-timer-end-time
+                                             (time-since org-work-timer-pause-time))))
+
+    ;; Add pause period to `org-work-timer-current-timer-pauses'
+    (setf (plist-get (car (last org-work-timer-current-timer-pauses)) :pause-end)
+          (float-time (current-time)))
+    (setq org-work-timer-pause-time nil))
    (t
-    (when (timerp org-work-timer-current-timer)
-      (cancel-timer org-work-timer-current-timer))
-    ;; In the history, update the end time of the timer that is being paused
-    (setf (car (last org-work-timer-history))
-          (list (caar (last org-work-timer-history))
-                (cons (nth 1 (flatten-list (last org-work-timer-history)))
-                      (float-time (current-time)))))
-    (setq org-work-timer-pause-time (float-time (current-time))))))
+    (setq org-work-timer-pause-time (float-time (current-time)))
+    (setq org-work-timer-current-timer-pauses
+          (append org-work-timer-current-timer-pauses
+                  (list (list :pause-start org-work-timer-pause-time :pause-end nil)))))))
 
 ;;;###autoload
 (defun org-work-timer-cycle-finish ()
   "Finish the current timer cycle."
   (interactive)
-  ;; If called when timer is paused, add period paused to history
-  (org-work-timer--append-pause-to-history)
+  ;; If the user wants to end a cycle amidst a pause, then call
+  ;; `org-work-timer-pause-or-continue' to end pause (setting variables
+  ;; accordingly)
+  (when org-work-timer-pause-time
+    (org-work-timer-pause-or-continue))
+  (setq org-work-timer-history
+        (append org-work-timer-history
+                (list (list :type org-work-timer-current-timer-type
+                            :start org-work-timer-start-time
+                            :end (float-time (current-time))
+                            :pauses org-work-timer-current-timer-pauses))))
   (pcase org-work-timer-current-timer-type
     ('break
      (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function)))
@@ -332,11 +328,12 @@ set manually."
   (interactive)
   (when (timerp org-work-timer-current-timer)
     (cancel-timer org-work-timer-current-timer))
-  (setq org-work-timer-start-time nil
+  (setq org-work-timer-current-timer nil
+        org-work-timer-current-timer-type nil
+        org-work-timer-start-time nil
         org-work-timer-end-time nil
         org-work-timer-pause-time nil
-        org-work-timer-current-timer-type nil
-        org-work-timer-current-timer nil
+        org-work-timer-current-timer-pauses nil
         org-work-timer-history nil
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string)))
 
