@@ -2,10 +2,44 @@
 
 * Usage
 
-* Roadmap
+** Advantage: history
 
-+ [ ] tk
+#+begin_comment
+Include annotated image (numbered elements, like a instructional diagram) that shows example data for ~org-work-timer-history~.
+#+end_comment
+
+* Mimicking ~org-pomodoro~
+
+#+begin_comment
+Include an example set up for the 50-minute variant
+#+end_comment
+
+* Mimicking ~org-pomodoro-third-time~
+
+#+begin_comment
+Include example set ups for different fractional break times?
+#+end_comment
+
+* Advanced configuration
+
+** Internals
+
+#+begin_comment
+Include Mermaid diagram showcasing the interaction between the layers of the program. One end should be the USER, another the MODE LINE TIMER. In between should be the layers of (at the time of writing this): HISTORY, DURATION FUNCTIONS
+#+end_comment
+
+** Relevant variables and functions
+
+** Example configuration
+
+#+begin_comment
+Include my own configuration?
+#+end_comment
 
 * Other packages
 
-+ [[https://github.com/telotortium/org-pomodoro-third-time][Org-pomodoro-third-time: Adapt org-pomodoro to implement the Third Time system]]
+      + [[https://github.com/telotortium/org-pomodoro-third-time][Org-pomodoro-third-time: Adapt org-pomodoro to implement the Third Time system]]
+
+* Roadmap
+
++ [ ] tk
