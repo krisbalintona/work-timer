@@ -380,7 +380,8 @@ a number representing the duration of the timer in seconds."
   "p" #'org-work-timer-pause-or-continue
   "f" #'org-work-timer-cycle-finish
   "e" #'org-work-timer-end
-  "w" #'org-work-timer-start-or-end)
+  "w" #'org-work-timer-start-or-end
+  "S" #'org-work-timer-statistics)
 
 ;;;; Convenience
 (defun org-work-timer-statistics ()
