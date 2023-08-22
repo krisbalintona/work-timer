@@ -305,26 +305,34 @@ a number representing the duration of the timer in seconds."
           (append global-mode-string '(org-work-timer-mode-line-string)))))
 
 ;;;###autoload
-(defun org-work-timer-pause-or-continue ()
-  "Pause or continue the current timer."
-  (interactive)
-  (cond
-   ((not (timerp org-work-timer-current-timer)) (user-error "No timer running!"))
-   (org-work-timer-pause-time
-    ;; Move back `org-work-timer-end-time' for how long timer was paused
-    (setq org-work-timer-end-time (float-time
-                                   (time-add org-work-timer-end-time
-                                             (time-since org-work-timer-pause-time))))
+(defun org-work-timer-pause-or-continue (&optional pause-or-continue)
+  "Pause or continue the current timer.
 
-    ;; Add pause period to `org-work-timer-pauses'
-    (setf (plist-get (car (last org-work-timer-pauses)) :pause-end)
-          (float-time (current-time)))
-    (setq org-work-timer-pause-time nil))
-   (t
-    (setq org-work-timer-pause-time (float-time (current-time)))
-    (setq org-work-timer-pauses
-          (append org-work-timer-pauses
-                  (list (list :pause-start org-work-timer-pause-time :pause-end nil)))))))
+If PAUSE-OR-CONTINUE is `'pause' or `'continue', then force doing
+that action."
+  (interactive)
+  (when (not (timerp org-work-timer-current-timer))
+    (user-error "[org-work-timer] No timer running!"))
+  (setq pause-or-continue (or pause-or-continue
+                              (if org-work-timer-pause-time
+                                  'continue
+                                'pause)))
+  (pcase pause-or-continue
+    ('continue
+     ;; Move back `org-work-timer-end-time' for how long timer was paused
+     (setq org-work-timer-end-time (float-time
+                                    (time-add org-work-timer-end-time
+                                              (time-since org-work-timer-pause-time))))
+
+     ;; Add pause period to `org-work-timer-pauses'
+     (setf (plist-get (car (last org-work-timer-pauses)) :pause-end)
+           (float-time (current-time)))
+     (setq org-work-timer-pause-time nil))
+    ('pause
+     (setq org-work-timer-pause-time (float-time (current-time)))
+     (setq org-work-timer-pauses
+           (append org-work-timer-pauses
+                   (list (list :pause-start org-work-timer-pause-time :pause-end nil)))))))
 
 ;;;###autoload
 (defun org-work-timer-cycle-finish ()
