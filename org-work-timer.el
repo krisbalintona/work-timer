@@ -390,18 +390,8 @@ that action."
       (org-work-timer-end)
     (org-work-timer-start)))
 
-;;; Keymap
-(defvar-keymap org-work-timer-prefix-map
-  :doc "Prefix map for `org-work-timer' commands."
-  "s" #'org-work-timer-start
-  "p" #'org-work-timer-pause-or-continue
-  "f" #'org-work-timer-cycle-finish
-  "e" #'org-work-timer-end
-  "w" #'org-work-timer-start-or-end
-  "S" #'org-work-timer-statistics)
-
 ;;;; Convenience
-(defun org-work-timer-statistics ()
+(defun org-work-timer-report ()
   "Print the statistics of this series of timers."
   (interactive)
   (let* ((timer-entries
@@ -433,6 +423,16 @@ that action."
              break-count
              (format-seconds "%.2h:%.2m:%.2s" work-sum)
              (format-seconds "%.2h:%.2m:%.2s" break-sum))))
+
+;;;; Keymap
+(defvar-keymap org-work-timer-prefix-map
+  :doc "Prefix map for `org-work-timer' commands."
+  "s" #'org-work-timer-start
+  "p" #'org-work-timer-pause-or-continue
+  "f" #'org-work-timer-cycle-finish
+  "e" #'org-work-timer-end
+  "w" #'org-work-timer-start-or-end
+  "r" #'org-work-timer-report)
 
 ;;; Org-clock integration
 (defun org-work-timer-org-clock-in ()
