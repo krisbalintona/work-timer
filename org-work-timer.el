@@ -38,8 +38,10 @@
   :group 'org-progress)
 
 ;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-time-format "%M:%S"
-  "Defines the format of the time representation in the modeline."
+(defcustom org-work-timer-time-format "%h:%.2m"
+  "Defines the format of the time representation in the modeline.
+
+The acceptable formats are those taken from `format-seconds'."
   :group 'org-work-timer
   :type 'string)
 
@@ -248,18 +250,18 @@ a number representing the duration of the timer in seconds."
 ;;;; Mode line
 (defun org-work-timer-update-mode-line ()
   "Set `org-work-timer-mode-line-string' appropriately."
-  (let* ((running (org-work-timer-elapsed-without-pauses
-                   (list :start org-work-timer-start-time
-                         :end (float-time (current-time))
-                         :pauses org-work-timer-pauses)))
+  (let* ((type
+          (capitalize (symbol-name org-work-timer-type)))
+         (running
+          (format-seconds org-work-timer-time-format
+                          (org-work-timer-elapsed-without-pauses
+                           (list :start org-work-timer-start-time
+                                 :end (float-time (current-time))
+                                 :pauses org-work-timer-pauses))))
          (duration
-          (format-time-string org-work-timer-time-format org-work-timer-duration))
+          (format-seconds org-work-timer-time-format org-work-timer-duration))
          (mode-line-string
-          (concat "[" (format "%s: %s/%s"
-                              (capitalize (symbol-name org-work-timer-type))
-                              (format-time-string org-work-timer-time-format running)
-                              duration)
-                  "] ")))
+          (concat "[" (format "%s: %s/%s" type running duration) "] ")))
     (setq org-work-timer-mode-line-string
           (propertize mode-line-string 'face 'org-work-timer-mode-line)))
   (force-mode-line-update t))
