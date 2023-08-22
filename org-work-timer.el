@@ -31,7 +31,6 @@
 
 ;;; Code:
 ;;; Customizable variables
-
 (defgroup org-work-timer nil
   "Org-work-timer customization."
   :tag "Org work timer"
@@ -111,13 +110,11 @@ function that returns the duration of a break in seconds."
   :type 'number)
 
 ;;; Faces
-
 (defface org-work-timer-mode-line '((t (:foreground "DeepSkyBlue")))
   "Face used for timer display in mode line."
   :group 'org-work-timer)
 
 ;;; Internal variables
-
 (defvar org-work-timer-mode-line-string ""
   "Mode line string for the current work timer.")
 (put 'org-work-timer-mode-line-string 'risky-local-variable t)
@@ -148,7 +145,6 @@ function that returns the duration of a break in seconds."
 
 ;;; Functions
 ;;;; Duration functions
-
 (defun org-work-timer-elapsed-without-pauses (timer-entry)
   "Given TIMER-ENTRY, return time elapsed excluding pauses."
   (let ((total-elapsed
@@ -270,6 +266,7 @@ a number representing the duration of the timer in seconds."
      (format "ffplay -nodisp -autoexit %s >/dev/null 2>&1" sound) nil 0)))
 
 ;;; Commands
+;;;; Timers
 ;;;###autoload
 (defun org-work-timer-start ()
   "Start a work timer."
@@ -337,6 +334,35 @@ a number representing the duration of the timer in seconds."
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string))
   (force-mode-line-update t))
 
+;;;; Convenience
+(defun org-work-timer-statistics ()
+  "Print the statistics of this series of timers."
+  (interactive)
+  (let ((elapsed
+         (- (plist-get (car (last org-work-timer-history)) :end)
+            (plist-get (first org-work-timer-history) :start)))
+        (work-count
+         (cl-count-if (lambda (elt) (eq (plist-get elt :type) 'work))
+                      org-work-timer-history))
+        (work-sum
+         (apply #'+ (cl-loop for entry in org-work-timer-history
+                             if (eq (plist-get entry :type) 'work)
+                             collect (org-work-timer-elapsed-without-pauses entry))))
+        (break-count
+         (cl-count-if (lambda (elt) (eq (plist-get elt :type) 'break))
+                      org-work-timer-history))
+        (break-sum
+         (apply #'+ (cl-loop for entry in org-work-timer-history
+                             if (eq (plist-get entry :type) 'break)
+                             collect (org-work-timer-elapsed-without-pauses entry)))))
+    (message "In the last %s, you had %s work sessions and %s breaks, and worked for %s and took breaks for %s."
+             (format-seconds "%.2h hours and %.2m mintues" elapsed)
+             work-count
+             break-count
+             (format-seconds "%.2h:%.2m:%.2s" work-sum)
+             (format-seconds "%.2h:%.2m:%.2s" break-sum))))
+
+;;; Keymap
 (defvar-keymap org-work-timer-prefix-map
   :doc "Prefix map for `org-work-timer' commands."
   "s" #'org-work-timer-start
