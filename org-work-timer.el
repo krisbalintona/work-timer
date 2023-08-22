@@ -37,7 +37,6 @@
   :tag "Org work timer"
   :group 'org-progress)
 
-;; TODO 2023-08-16: Change to be more sensible
 (defcustom org-work-timer-time-format "%h:%.2m"
   "Defines the format of the time representation in the modeline.
 
@@ -55,7 +54,7 @@ The acceptable formats are those taken from `format-seconds'."
 ;; TODO 2023-08-16: Perhaps it'd be best if I allow the user to set this to
 ;; either a function or a number
 (defcustom org-work-timer-work-duration-function
-  'org-work-timer-work-duration-fractional
+  'org-work-timer-work-duration-basic
   "Calculate the duration for work timers (in seconds).
 
 Possible values are `org-work-timer-work-duration-basic',
@@ -66,7 +65,7 @@ function that returns the duration of a break in seconds."
   :type 'symbol)
 
 (defcustom org-work-timer-break-duration-function
-  'org-work-timer-break-duration-fractional
+  'org-work-timer-break-duration-basic
   "Calculate the duration for work timers (in seconds).
 
 Possible values are `org-work-timer-break-duration-basic',
@@ -76,44 +75,37 @@ function that returns the duration of a break in seconds."
   :group 'org-work-timer
   :type 'symbol)
 
-;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-default-work-duration 0.25
+(defcustom org-work-timer-default-work-duration 30
   "Default number of minutes for work timers."
   :group 'org-work-timer
   :type 'number)
 
-;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-default-break-duration 0.17
+(defcustom org-work-timer-default-break-duration 10
   "Default number of minutes for break timers."
   :group 'org-work-timer
   :type 'number)
 
-;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-pomodoro-work-duration 1
+(defcustom org-work-timer-pomodoro-work-duration 25
   "Number of minutes for Pomodoro work timers."
   :group 'org-work-timer
   :type 'number)
 
-;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-pomodoro-break-duration-short 0.25
+(defcustom org-work-timer-pomodoro-break-duration-short 5
   "Number of minutes for short (i.e. regular) Pomodoro timers."
   :group 'org-work-timer
   :type 'number)
 
-;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-pomodoro-break-duration-long 0.5
+(defcustom org-work-timer-pomodoro-break-duration-long 20
   "Number of minutes for long (after four cycles) Pomodoro timers."
   :group 'org-work-timer
   :type 'number)
 
-;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-fractional-work-duration 0.5
+(defcustom org-work-timer-fractional-work-duration 25
   "Number of minutes for fractional work timers."
   :group 'org-work-timer
   :type 'number)
 
-;; TODO 2023-08-16: Change to be more sensible
-(defcustom org-work-timer-fractional-break-duration-fraction 0.25
+(defcustom org-work-timer-fractional-break-duration-fraction 0.2
   "Fraction of work time used to determine break timer."
   :group 'org-work-timer
   :type 'number)
@@ -211,7 +203,8 @@ Return, in seconds, a fraction of the time worked in the preview
 work timer. This fraction is determined by the value of
 `org-work-timer-fractional-break-duration-fraction'."
   (let* ((work-period (car (last org-work-timer-history)))
-         (elapsed-sum (- (plist-get work-period :end) (plist-get work-period :start)))
+         (elapsed-sum (- (plist-get work-period :end)
+                         (plist-get work-period :start)))
          (pause-sum
           (apply #'+ (cl-loop for pause in (plist-get work-period :pauses)
                               collect (- (plist-get pause :pause-end)
