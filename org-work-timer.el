@@ -425,6 +425,32 @@ that action."
              (format-seconds "%.2h:%.2m:%.2s" work-sum)
              (format-seconds "%.2h:%.2m:%.2s" break-sum))))
 
+;;; Org-clock integration
+(defun org-work-timer-org-clock-in ()
+  "Function added to `org-clock-in-hook'."
+  (if (timerp org-work-timer-current-timer)
+      (org-work-timer-pause-or-continue 'continue)
+    (org-work-timer-start)))
+
+(defun org-work-timer-org-clock-out ()
+  "Function added to `org-clock-out-hook'."
+  (when (timerp org-work-timer-current-timer)
+    (org-work-timer-pause-or-continue 'pause)))
+
+;;;###autoload
+(define-minor-mode org-work-timer-with-org-clock-mode
+  "Global minor mode that integrates with org-work-timer with org-clock."
+  :global t
+  :group 'org-work-timer
+  (cond
+   (org-work-timer-with-org-clock-mode
+    (add-hook 'org-clock-in-hook 'org-work-timer-org-clock-in)
+    (add-hook 'org-clock-out-hook 'org-work-timer-org-clock-out)
+    (add-hook 'org-clock-cancel-hook 'org-work-timer-org-clock-out))
+   (t
+    (remove-hook 'org-clock-in-hook 'org-work-timer-org-clock-in)
+    (remove-hook 'org-clock-out-hook 'org-work-timer-org-clock-out)
+    (remove-hook 'org-clock-cancel-hook 'org-work-timer-org-clock-out))))
 
 (provide 'org-work-timer)
 ;;; org-work-timer.el ends here
