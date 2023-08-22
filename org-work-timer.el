@@ -297,7 +297,10 @@ a number representing the duration of the timer in seconds."
   (interactive)
   (setq org-work-timer-time-bank 0)
   (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function))
-  (setq global-mode-string (append global-mode-string '(org-work-timer-mode-line-string))))
+  (unless global-mode-string (setq global-mode-string '("")))
+  (unless (memq 'org-work-timer-mode-line-string global-mode-string)
+    (setq global-mode-string
+          (append global-mode-string '(org-work-timer-mode-line-string)))))
 
 ;;;###autoload
 (defun org-work-timer-pause-or-continue ()
