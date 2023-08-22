@@ -326,7 +326,8 @@ a number representing the duration of the timer in seconds."
         org-work-timer-pause-time nil
         org-work-timer-pauses nil
         org-work-timer-history nil
-        global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string)))
+        global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string))
+  (force-mode-line-update t))
 
 (defvar-keymap org-work-timer-prefix-map
   :doc "Prefix map for `org-work-timer' commands."
