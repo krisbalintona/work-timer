@@ -365,6 +365,23 @@ a number representing the duration of the timer in seconds."
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string))
   (force-mode-line-update t))
 
+;;;###autoload
+(defun org-work-timer-start-or-end ()
+  "Conditionally start or end a timer."
+  (interactive)
+  (if (timerp org-work-timer-current-timer)
+      (org-work-timer-end)
+    (org-work-timer-start)))
+
+;;; Keymap
+(defvar-keymap org-work-timer-prefix-map
+  :doc "Prefix map for `org-work-timer' commands."
+  "s" #'org-work-timer-start
+  "p" #'org-work-timer-pause-or-continue
+  "f" #'org-work-timer-cycle-finish
+  "e" #'org-work-timer-end
+  "w" #'org-work-timer-start-or-end)
+
 ;;;; Convenience
 (defun org-work-timer-statistics ()
   "Print the statistics of this series of timers."
@@ -399,13 +416,6 @@ a number representing the duration of the timer in seconds."
              (format-seconds "%.2h:%.2m:%.2s" work-sum)
              (format-seconds "%.2h:%.2m:%.2s" break-sum))))
 
-;;; Keymap
-(defvar-keymap org-work-timer-prefix-map
-  :doc "Prefix map for `org-work-timer' commands."
-  "s" #'org-work-timer-start
-  "p" #'org-work-timer-pause-or-continue
-  "f" #'org-work-timer-cycle-finish
-  "e" #'org-work-timer-end)
 
 (provide 'org-work-timer)
 ;;; org-work-timer.el ends here
