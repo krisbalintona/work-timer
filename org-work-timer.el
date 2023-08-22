@@ -116,6 +116,12 @@ function that returns the duration of a break in seconds."
   :group 'org-work-timer
   :type 'number)
 
+;;; Faces
+
+(defface org-work-timer-mode-line '((t (:foreground "DeepSkyBlue")))
+  "Face used for timer display in mode line."
+  :group 'org-work-timer)
+
 ;;; Internal variables
 
 (defvar org-work-timer-mode-line-string ""
@@ -242,18 +248,20 @@ a number representing the duration of the timer in seconds."
 ;;;; Mode line
 (defun org-work-timer-update-mode-line ()
   "Set `org-work-timer-mode-line-string' appropriately."
-  (let ((running (org-work-timer-elapsed-without-pauses
-                  (list :start org-work-timer-start-time
-                        :end (float-time (current-time))
-                        :pauses org-work-timer-pauses)))
-        (duration
-         (format-time-string org-work-timer-time-format org-work-timer-duration)))
-    (setq org-work-timer-mode-line-string
+  (let* ((running (org-work-timer-elapsed-without-pauses
+                   (list :start org-work-timer-start-time
+                         :end (float-time (current-time))
+                         :pauses org-work-timer-pauses)))
+         (duration
+          (format-time-string org-work-timer-time-format org-work-timer-duration))
+         (mode-line-string
           (concat "[" (format "%s: %s/%s"
                               org-work-timer-type
                               (format-time-string org-work-timer-time-format running)
                               duration)
                   "] ")))
+    (setq org-work-timer-mode-line-string
+          (propertize mode-line-string 'face 'org-work-timer-mode-line)))
   (force-mode-line-update t))
 
 ;;;; Sound
