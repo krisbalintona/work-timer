@@ -215,8 +215,10 @@ work timer. This fraction is determined by the value of
           (apply #'+ (cl-loop for pause in (plist-get work-period :pauses)
                               collect (- (plist-get pause :pause-end)
                                          (plist-get pause :pause-start))))))
-    (+ org-work-timer-time-bank
-       (* (- elapsed-sum pause-sum) org-work-timer-fractional-break-duration-fraction))))
+    (max
+     (* 60 org-work-timer-default-break-duration)
+     (+ org-work-timer-time-bank
+        (* (- elapsed-sum pause-sum) org-work-timer-fractional-break-duration-fraction)))))
 
 ;;;; Timers
 (defun org-work-timer-tick ()
