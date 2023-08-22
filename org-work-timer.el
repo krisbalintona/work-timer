@@ -259,7 +259,12 @@ a number representing the duration of the timer in seconds."
 ;;;; Sound
 (defun org-work-timer-play-sound ()
   "Play audio for a timer's end."
-  (play-sound-file (expand-file-name org-work-timer-sound)))
+  (when-let ((sound (expand-file-name org-work-timer-sound))
+             ((file-exists-p sound)))
+    (unless (executable-find "ffplay")
+      (user-error "Cannot play %s without `ffplay'" sound))
+    (call-process-shell-command
+     (format "ffplay -nodisp -autoexit %s >/dev/null 2>&1" sound) nil 0)))
 
 ;;; Commands
 ;;;###autoload
