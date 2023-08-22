@@ -256,7 +256,7 @@ a number representing the duration of the timer in seconds."
           (format-time-string org-work-timer-time-format org-work-timer-duration))
          (mode-line-string
           (concat "[" (format "%s: %s/%s"
-                              org-work-timer-type
+                              (capitalize (symbol-name org-work-timer-type))
                               (format-time-string org-work-timer-time-format running)
                               duration)
                   "] ")))
