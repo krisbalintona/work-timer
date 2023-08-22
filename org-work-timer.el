@@ -115,7 +115,7 @@ function that returns the duration of a break in seconds."
   :group 'org-work-timer)
 
 ;;; Faces
-(defface org-work-timer-mode-line '((t (:foreground "DeepSkyBlue")))
+(defface org-work-timer-mode-line '((t (:foreground "DarkOrange")))
   "Face used for timer display in mode line."
   :group 'org-work-timer)
 
