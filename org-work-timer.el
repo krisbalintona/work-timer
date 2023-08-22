@@ -109,6 +109,11 @@ function that returns the duration of a break in seconds."
   :group 'org-work-timer
   :type 'number)
 
+(defcustom org-work-timer-cycle-finished-hook '(org-work-timer-early-or-overrun-to-bank)
+  "Hook run before `org-work-timer-cycle-finish' is called."
+  :type 'hook
+  :group 'org-work-timer)
+
 ;;; Faces
 (defface org-work-timer-mode-line '((t (:foreground "DeepSkyBlue")))
   "Face used for timer display in mode line."
@@ -143,6 +148,9 @@ function that returns the duration of a break in seconds."
 (defvar org-work-timer-history nil
   "Mode line string for the current work timer.")
 
+(defvar org-work-timer-time-bank 0
+  "Seconds held in a \"bank\".")
+
 ;;; Functions
 ;;;; Duration functions
 (defun org-work-timer-elapsed-without-pauses (timer-entry)
@@ -168,7 +176,8 @@ function that returns the duration of a break in seconds."
 
 (defun org-work-timer-break-duration-basic ()
   "Return `org-work-timer-default-break-duration' in seconds."
-  (* 60 org-work-timer-default-break-duration))
+  (+ org-work-timer-time-bank
+     (* 60 org-work-timer-default-break-duration)))
 
 ;;;;; Pomodoro
 (defun org-work-timer-work-duration-pomodoro ()
@@ -177,12 +186,13 @@ function that returns the duration of a break in seconds."
 
 (defun org-work-timer-break-duration-pomodoro ()
   "Break duration in seconds according to the Pomodoro method."
-  (if (zerop (mod (cl-count-if
-                   (lambda (elt) (eq (plist-get elt :type) 'work))
-                   org-work-timer-history)
-                  4))
-      (* 60 org-work-timer-pomodoro-break-duration-long)
-    (* 60 org-work-timer-pomodoro-break-duration-short)))
+  (+ org-work-timer-time-bank
+     (if (zerop (mod (cl-count-if
+                      (lambda (elt) (eq (plist-get elt :type) 'work))
+                      org-work-timer-history)
+                     4))
+         (* 60 org-work-timer-pomodoro-break-duration-long)
+       (* 60 org-work-timer-pomodoro-break-duration-short))))
 
 ;;;;; Fractional
 (defun org-work-timer-work-duration-fractional ()
@@ -205,7 +215,8 @@ work timer. This fraction is determined by the value of
           (apply #'+ (cl-loop for pause in (plist-get work-period :pauses)
                               collect (- (plist-get pause :pause-end)
                                          (plist-get pause :pause-start))))))
-    (* (- elapsed-sum pause-sum) org-work-timer-fractional-break-duration-fraction)))
+    (+ org-work-timer-time-bank
+       (* (- elapsed-sum pause-sum) org-work-timer-fractional-break-duration-fraction))))
 
 ;;;; Timers
 (defun org-work-timer-tick ()
@@ -265,14 +276,27 @@ a number representing the duration of the timer in seconds."
     (call-process-shell-command
      (format "ffplay -nodisp -autoexit %s >/dev/null 2>&1" sound) nil 0)))
 
+;;;; Other
+(defun org-work-timer-early-or-overrun-to-bank ()
+  "Add time or subtract to bank if early or overrunning in break."
+  (when (eq org-work-timer-type 'break)
+    (let ((bank
+           (org-work-timer-elapsed-without-pauses
+            (list :start (float-time (current-time))
+                  :end org-work-timer-end-time
+                  :pauses org-work-timer-pauses))))
+      (message "[org-work-timer] Adding %s seconds to bank."
+               (format-seconds "%.2m:%.2s" bank))
+      (setq org-work-timer-time-bank bank))))
+
 ;;; Commands
 ;;;; Timers
 ;;;###autoload
 (defun org-work-timer-start ()
   "Start a work timer."
   (interactive)
+  (setq org-work-timer-time-bank 0)
   (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function))
-  ;; Add to `global-mode-string'
   (setq global-mode-string (append global-mode-string '(org-work-timer-mode-line-string))))
 
 ;;;###autoload
@@ -301,6 +325,7 @@ a number representing the duration of the timer in seconds."
 (defun org-work-timer-cycle-finish ()
   "Finish the current timer cycle."
   (interactive)
+  (run-hooks 'org-work-timer-cycle-finished-hook)
   ;; If the user wants to end a cycle amidst a pause, then call
   ;; `org-work-timer-pause-or-continue' to end pause (setting variables
   ;; accordingly)
@@ -331,6 +356,7 @@ a number representing the duration of the timer in seconds."
         org-work-timer-pause-time nil
         org-work-timer-pauses nil
         org-work-timer-history nil
+        org-work-timer-time-bank 0
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string))
   (force-mode-line-update t))
 
