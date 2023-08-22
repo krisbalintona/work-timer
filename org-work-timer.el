@@ -6,7 +6,7 @@
 ;; Maintainer: Kristoffer Balintona <krisbalintona@gmail.com>
 ;; Created: 2023
 ;; Version: 0.1
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "29.1"))
 ;; Homepage: https://github.com/krisbalintona/org-work-timer
 ;; Keywords: convenience
 
@@ -336,6 +336,13 @@ set manually."
         org-work-timer-pauses nil
         org-work-timer-history nil
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string)))
+
+(defvar-keymap org-work-timer-prefix-map
+  :doc "Prefix map for `org-work-timer' commands."
+  "s" #'org-work-timer-start
+  "p" #'org-work-timer-pause-or-continue
+  "f" #'org-work-timer-cycle-finish
+  "e" #'org-work-timer-end)
 
 (provide 'org-work-timer)
 ;;; org-work-timer.el ends here
