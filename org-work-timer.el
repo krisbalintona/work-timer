@@ -30,8 +30,8 @@
 ;; Flexible work timers with org.
 
 ;;; Code:
-
 ;;; Customizable variables
+
 (defgroup org-work-timer nil
   "Org-work-timer customization."
   :tag "Org work timer"
@@ -55,45 +55,47 @@
 ;; either a function or a number
 (defcustom org-work-timer-work-duration-function
   'org-work-timer-work-duration-fractional
-  "This function calculates the duration for work timers (in seconds).
+  "Calculate the duration for work timers (in seconds).
 
-Possible values are `org-work-timer-work-duration-basic' and a
-user-defined function that returns the duration of a break in
-seconds."
+Possible values are `org-work-timer-work-duration-basic',
+`org-work-timer-work-duration-fractional',
+`org-work-timer-work-duration-pomodoro'and a user-defined
+function that returns the duration of a break in seconds."
   :group 'org-work-timer
   :type 'symbol)
 
 (defcustom org-work-timer-break-duration-function
   'org-work-timer-break-duration-fractional
-  "This function calculates the duration for work timers (in seconds).
+  "Calculate the duration for work timers (in seconds).
 
 Possible values are `org-work-timer-break-duration-basic',
-`org-work-timer-break-duration-fractional', and a user-defined
+`org-work-timer-break-duration-fractional',
+`org-work-timer-break-duration-pomodoro' and a user-defined
 function that returns the duration of a break in seconds."
   :group 'org-work-timer
   :type 'symbol)
 
 ;; TODO 2023-08-16: Change to be more sensible
 (defcustom org-work-timer-default-work-duration 0.25
-  "Default number of minutes for timers."
+  "Default number of minutes for work timers."
   :group 'org-work-timer
   :type 'number)
 
 ;; TODO 2023-08-16: Change to be more sensible
 (defcustom org-work-timer-default-break-duration 0.17
-  "Default number of minutes for timers."
+  "Default number of minutes for break timers."
   :group 'org-work-timer
   :type 'number)
 
 ;; TODO 2023-08-16: Change to be more sensible
 (defcustom org-work-timer-pomodoro-work-duration 1
-  "Number of minutes for Pomodoro timers."
+  "Number of minutes for Pomodoro work timers."
   :group 'org-work-timer
   :type 'number)
 
 ;; TODO 2023-08-16: Change to be more sensible
 (defcustom org-work-timer-pomodoro-break-duration-short 0.25
-  "Number of minutes for short (regular) Pomodoro timers."
+  "Number of minutes for short (i.e. regular) Pomodoro timers."
   :group 'org-work-timer
   :type 'number)
 
@@ -117,7 +119,9 @@ function that returns the duration of a break in seconds."
 
 ;;; Internal variables
 
-;; FIXME 2023-08-21: Make variable names consistent
+(defvar org-work-timer-mode-line-string ""
+  "Mode line string for the current work timer.")
+(put 'org-work-timer-mode-line-string 'risky-local-variable t)
 
 (defvar org-work-timer-current-timer nil
   "The current work timer.")
@@ -128,7 +132,7 @@ function that returns the duration of a break in seconds."
 (defvar org-work-timer-pauses nil
   "A list of conses, each being a start and end time of a pause.")
 
-(defvar org-work-timer-current-timer-duration nil
+(defvar org-work-timer-duration nil
   "Duration of the current work timer.")
 
 (defvar org-work-timer-start-time nil
@@ -140,21 +144,17 @@ function that returns the duration of a break in seconds."
 (defvar org-work-timer-end-time nil
   "The end time of the current work timer.")
 
-(defvar org-work-timer-mode-line-string ""
-  "Mode line string for the current work timer.")
-(put 'org-work-timer-mode-line-string 'risky-local-variable t)
-
 (defvar org-work-timer-history nil
   "Mode line string for the current work timer.")
 
 ;;; Functions
 ;;;; Duration functions
 
-(defun org-work-timer-elapsed-without-pauses (history-entry)
-  "Given HISTORY-ENTRY, return time elapsed excluding pauses."
+(defun org-work-timer-elapsed-without-pauses (timer-entry)
+  "Given TIMER-ENTRY, return time elapsed excluding pauses."
   (let ((total-elapsed
-         (- (plist-get history-entry :end)
-            (plist-get history-entry :start)))
+         (- (plist-get timer-entry :end)
+            (plist-get timer-entry :start)))
         (time-paused
          (apply #'+ (mapcar (lambda (elt)
                               (- (or (plist-get elt :pause-end)
@@ -163,25 +163,25 @@ function that returns the duration of a break in seconds."
                                      ;; (i.e. we're currently in a pause)?
                                      (float-time (current-time)))
                                  (plist-get elt :pause-start)))
-                            (plist-get history-entry :pauses)))))
+                            (plist-get timer-entry :pauses)))))
     (- total-elapsed time-paused)))
 
 ;;;;; Basic
 (defun org-work-timer-work-duration-basic ()
-  "Simply return `org-work-timer-default-work-duration' in seconds."
+  "Return `org-work-timer-default-work-duration' in seconds."
   (* 60 org-work-timer-default-work-duration))
 
 (defun org-work-timer-break-duration-basic ()
-  "Simply return `org-work-timer-default-break-duration' in seconds."
+  "Return `org-work-timer-default-break-duration' in seconds."
   (* 60 org-work-timer-default-break-duration))
 
 ;;;;; Pomodoro
 (defun org-work-timer-work-duration-pomodoro ()
-  "Work duration according to the Pomodoro method."
+  "Work duration in seconds according to the Pomodoro method."
   (* 60 org-work-timer-pomodoro-work-duration))
 
 (defun org-work-timer-break-duration-pomodoro ()
-  "Break duration according to the Pomodoro method."
+  "Break duration in seconds according to the Pomodoro method."
   (if (zerop (mod (cl-count-if
                    (lambda (elt) (eq (plist-get elt :type) 'work))
                    org-work-timer-history)
@@ -191,11 +191,18 @@ function that returns the duration of a break in seconds."
 
 ;;;;; Fractional
 (defun org-work-timer-work-duration-fractional ()
-  "Work duration according to the Pomodoro method."
+  "\"Fractional\" work duration in seconds.
+
+Returns the value of `org-work-timer-fractional-work-duration' in
+seconds."
   (* 60 org-work-timer-fractional-work-duration))
 
 (defun org-work-timer-break-duration-fractional ()
-  "Break duration according to the Pomodoro method."
+  "\"Fractional\" break duration in seconds.
+
+Return, in seconds, a fraction of the time worked in the preview
+work timer. This fraction is determined by the value of
+`org-work-timer-fractional-break-duration-fraction'."
   (let* ((work-period (car (last org-work-timer-history)))
          (elapsed-sum (- (plist-get work-period :end) (plist-get work-period :start)))
          (pause-sum
@@ -206,11 +213,11 @@ function that returns the duration of a break in seconds."
 
 ;;;; Timers
 (defun org-work-timer-tick ()
-  "A callback that is invoked by the running timer each second.
-It checks whether we reached the duration of the current phase,
-when 't it invokes the handlers for finishing."
+  "A function invoked by `org-work-timer-current-timer' each second.
+Updates the mode line and plays a sound if the the duration of
+the current timer is reached."
   (org-work-timer-update-mode-line)
-  (when (equal (floor (- org-work-timer-current-timer-duration
+  (when (equal (floor (- org-work-timer-duration
                          (org-work-timer-elapsed-without-pauses
                           (list :start org-work-timer-start-time
                                 :end (float-time (current-time))
@@ -221,16 +228,12 @@ when 't it invokes the handlers for finishing."
 (defun org-work-timer-set-timer (type duration)
   "Create a timer and set the appropriate variables.
 TYPE is a symbol representing the type of the timer. DURATION is
-in seconds.
-
-If the optional arguments START and END are provided,
-`org-work-timer-start-time' and `org-work-timer-end-time' will be
-set manually."
+a number representing the duration of the timer in seconds."
   (when (timerp org-work-timer-current-timer)
     (cancel-timer org-work-timer-current-timer))
   (setq org-work-timer-type type
         org-work-timer-start-time (float-time (current-time))
-        org-work-timer-current-timer-duration duration
+        org-work-timer-duration duration
         org-work-timer-end-time (float-time (time-add (current-time) duration))
         org-work-timer-pauses nil
         org-work-timer-pause-time nil
@@ -239,13 +242,13 @@ set manually."
 
 ;;;; Mode line
 (defun org-work-timer-update-mode-line ()
-  "Set `org-work-timer-mode-line-string'."
+  "Set `org-work-timer-mode-line-string' appropriately."
   (let ((running (org-work-timer-elapsed-without-pauses
                   (list :start org-work-timer-start-time
                         :end (float-time (current-time))
                         :pauses org-work-timer-pauses)))
         (duration
-         (format-time-string org-work-timer-time-format org-work-timer-current-timer-duration)))
+         (format-time-string org-work-timer-time-format org-work-timer-duration)))
     (setq org-work-timer-mode-line-string
           (concat "[" (format "%s: %s/%s"
                               org-work-timer-type
