@@ -122,10 +122,10 @@ function that returns the duration of a break in seconds."
 (defvar org-work-timer-current-timer nil
   "The current work timer.")
 
-(defvar org-work-timer-current-timer-type nil
+(defvar org-work-timer-type nil
   "The type of the current timer (e.g. work, break).")
 
-(defvar org-work-timer-current-timer-pauses nil
+(defvar org-work-timer-pauses nil
   "A list of conses, each being a start and end time of a pause.")
 
 (defvar org-work-timer-current-timer-duration nil
@@ -214,7 +214,7 @@ when 't it invokes the handlers for finishing."
                          (org-work-timer-elapsed-without-pauses
                           (list :start org-work-timer-start-time
                                 :end (float-time (current-time))
-                                :pauses org-work-timer-current-timer-pauses))))
+                                :pauses org-work-timer-pauses))))
                0)
     (org-work-timer-play-sound)))
 
@@ -228,11 +228,11 @@ If the optional arguments START and END are provided,
 set manually."
   (when (timerp org-work-timer-current-timer)
     (cancel-timer org-work-timer-current-timer))
-  (setq org-work-timer-current-timer-type type
+  (setq org-work-timer-type type
         org-work-timer-start-time (float-time (current-time))
         org-work-timer-current-timer-duration duration
         org-work-timer-end-time (float-time (time-add (current-time) duration))
-        org-work-timer-current-timer-pauses nil
+        org-work-timer-pauses nil
         org-work-timer-pause-time nil
         org-work-timer-current-timer (run-with-timer t 1 'org-work-timer-tick))
   (org-work-timer-update-mode-line))
@@ -243,12 +243,12 @@ set manually."
   (let ((running (org-work-timer-elapsed-without-pauses
                   (list :start org-work-timer-start-time
                         :end (float-time (current-time))
-                        :pauses org-work-timer-current-timer-pauses)))
+                        :pauses org-work-timer-pauses)))
         (duration
          (format-time-string org-work-timer-time-format org-work-timer-current-timer-duration)))
     (setq org-work-timer-mode-line-string
           (concat "[" (format "%s: %s/%s"
-                              org-work-timer-current-timer-type
+                              org-work-timer-type
                               (format-time-string org-work-timer-time-format running)
                               duration)
                   "] ")))
@@ -291,14 +291,14 @@ set manually."
                                    (time-add org-work-timer-end-time
                                              (time-since org-work-timer-pause-time))))
 
-    ;; Add pause period to `org-work-timer-current-timer-pauses'
-    (setf (plist-get (car (last org-work-timer-current-timer-pauses)) :pause-end)
+    ;; Add pause period to `org-work-timer-pauses'
+    (setf (plist-get (car (last org-work-timer-pauses)) :pause-end)
           (float-time (current-time)))
     (setq org-work-timer-pause-time nil))
    (t
     (setq org-work-timer-pause-time (float-time (current-time)))
-    (setq org-work-timer-current-timer-pauses
-          (append org-work-timer-current-timer-pauses
+    (setq org-work-timer-pauses
+          (append org-work-timer-pauses
                   (list (list :pause-start org-work-timer-pause-time :pause-end nil)))))))
 
 ;;;###autoload
@@ -312,11 +312,11 @@ set manually."
     (org-work-timer-pause-or-continue))
   (setq org-work-timer-history
         (append org-work-timer-history
-                (list (list :type org-work-timer-current-timer-type
+                (list (list :type org-work-timer-type
                             :start org-work-timer-start-time
                             :end (float-time (current-time))
-                            :pauses org-work-timer-current-timer-pauses))))
-  (pcase org-work-timer-current-timer-type
+                            :pauses org-work-timer-pauses))))
+  (pcase org-work-timer-type
     ('break
      (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function)))
     (t
@@ -329,11 +329,11 @@ set manually."
   (when (timerp org-work-timer-current-timer)
     (cancel-timer org-work-timer-current-timer))
   (setq org-work-timer-current-timer nil
-        org-work-timer-current-timer-type nil
+        org-work-timer-type nil
         org-work-timer-start-time nil
         org-work-timer-end-time nil
         org-work-timer-pause-time nil
-        org-work-timer-current-timer-pauses nil
+        org-work-timer-pauses nil
         org-work-timer-history nil
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string)))
 
