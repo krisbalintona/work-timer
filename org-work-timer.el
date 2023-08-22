@@ -43,9 +43,8 @@
   :group 'org-work-timer
   :type 'string)
 
-(defcustom org-work-timer-audio-player (or (executable-find "aplay")
-                                           (executable-find "afplay"))
-  "Music player used to play sounds."
+(defcustom org-work-timer-sound "microwave-beep.mp3"
+  "Sound played once a timer's duration finishes."
   :group 'org-work-timer
   :type 'string)
 
@@ -260,18 +259,7 @@ a number representing the duration of the timer in seconds."
 ;;;; Sound
 (defun org-work-timer-play-sound ()
   "Play audio for a timer's end."
-  ;; FIXME 2023-08-16: Change this sound and add an user option for it
-  (let ((sound "/home/krisbalintona/.emacs.d/elpaca/builds/org-pomodoro/resources/bell.wav")
-        (args nil))                     ; FIXME 2023-08-15: Remove ARGS?
-    (cond ((and (fboundp 'sound-wav-play) sound)
-           (sound-wav-play sound))
-          ((and org-work-timer-audio-player sound)
-           (start-process-shell-command
-            "org-work-timer-audio-player" nil
-            (mapconcat 'identity
-                       `(,org-work-timer-audio-player
-                         ,@(delq nil (list args (shell-quote-argument (expand-file-name sound)))))
-                       " "))))))
+  (play-sound-file (expand-file-name org-work-timer-sound)))
 
 ;;; Commands
 ;;;###autoload
