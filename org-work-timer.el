@@ -134,6 +134,8 @@ function that returns the duration of a break in seconds."
   "Mode line string for the current work timer.")
 (put 'org-work-timer-mode-line-string 'risky-local-variable t)
 
+;; REVIEW 2023-08-23: Potentially rename overrun to one of: surplus, overflow,
+;; spill, excess
 (defvar org-work-timer-overrun-p nil
   "Whether running time has exceeded expected duration.")
 (put 'org-work-timer-overrun-p 'risky-local-variable t)
@@ -147,6 +149,8 @@ function that returns the duration of a break in seconds."
 (defvar org-work-timer-pauses nil
   "A list of conses, each being a start and end time of a pause.")
 
+;; TODO 2023-08-23: Consider having this be either a number, as it is now, or a
+;; list of numbers, or both
 (defvar org-work-timer-duration nil
   "Duration of the current work timer.")
 
@@ -165,7 +169,6 @@ function that returns the duration of a break in seconds."
 ;;; Functions
 ;;;; Processing timer history
 (defun org-work-timer-process-history (function predicate &optional history)
-  ;; REVIEW 2023-08-23: Write a better docstring
   "Process all entries in `org-work-timer-history'.
 Returns a list whose elements are the return value of FUNCTION
 applied to each entry in `org-work-timer-history'. Only operate
@@ -198,8 +201,6 @@ If HISTORY is provided, operate on that instead of
 
 (defun org-work-timer-overrun (timer-entry)
   "Given TIMER-ENTRY, return seconds overran."
-  ;; REVIEW 2023-08-23: Add user option to choose whether this already returns
-  ;; 0, instead?
   (let ((duration (plist-get timer-entry :expected-duration))
         (elapsed (org-work-timer-elapsed-without-pauses timer-entry)))
     (- duration elapsed)))
@@ -227,7 +228,7 @@ Also add total overrun time (which can be negative or positive)."
                           (org-work-timer-process-history 'identity
                                                           (lambda (entry) (eq (plist-get entry :type) 'work))))
                          4)))
-         (overrun
+         (overrun                    ; TODO 2023-08-23: Add explanation for this
           (apply #'+ (last (org-work-timer-process-history 'org-work-timer-overrun
                                                            (lambda (entry)
                                                              (member (plist-get entry :type)
