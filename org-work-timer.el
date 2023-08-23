@@ -154,27 +154,58 @@ function that returns the duration of a break in seconds."
 (defvar org-work-timer-history nil
   "Mode line string for the current work timer.")
 
-(defvar org-work-timer-time-bank 0
-  "Seconds held in a \"bank\".")
-
 ;;; Functions
-;;;; Duration functions
+;;;; Processing timer history
+(defun org-work-timer-process-history (function predicate &optional history)
+  ;; REVIEW 2023-08-23: Write a better docstring
+  "Process all entries in `org-work-timer-history'.
+Returns a list whose elements are the return value of FUNCTION
+applied to each entry in `org-work-timer-history'. Only operate
+on elements that satisfy PREDICATE. Both FUNCTION and PREDICATE
+take one argument, the current entry in `org-work-timer-history'.
+
+If HISTORY is provided, operate on that instead of
+`org-work-timer-history'."
+  (cl-loop for entry in (or history org-work-timer-history)
+           when (funcall (or predicate 'identity) entry)
+           collect (funcall function entry)))
+
 (defun org-work-timer-elapsed-without-pauses (timer-entry)
-  "Given TIMER-ENTRY, return time elapsed excluding pauses."
+  "Given TIMER-ENTRY, return seconds elapsed excluding pauses."
   (let ((total-elapsed
          (- (plist-get timer-entry :end)
             (plist-get timer-entry :start)))
         (time-paused
          (apply #'+ (mapcar (lambda (elt)
                               (- (or (plist-get elt :pause-end)
-                                     ;; REVIEW 2023-08-22: Is it okay to ad-hoc
-                                     ;; use `current-time' if :pause-end is nil
-                                     ;; (i.e. we're currently in a pause)?
+                                     ;; FIXME 2023-08-22: Avoid having this
+                                     ;; ad-hoc solution for when :pause-end is
+                                     ;; nil (i.e. we're currently in a pause)
+                                     ;; (used primarily for mode line running
+                                     ;; time)
                                      (float-time (current-time)))
                                  (plist-get elt :pause-start)))
                             (plist-get timer-entry :pauses)))))
     (- total-elapsed time-paused)))
 
+(defun org-work-timer-overrun (timer-entry)
+  "Given TIMER-ENTRY, return seconds overran."
+  ;; REVIEW 2023-08-23: Add user option to choose whether this already returns
+  ;; 0, instead?
+  (let ((duration (plist-get timer-entry :expected-duration))
+        (elapsed (org-work-timer-elapsed-without-pauses timer-entry)))
+    (- elapsed duration)))
+
+(defun org-work-timer-process-history-overrun (&optional predicate history)
+  "Return total overrun time in `org-work-timer-history'.
+Only process that satisfy PREDICATE, if supplied. If HISTORY is
+provided, process that list instead."
+  (apply #'+
+         (org-work-timer-process-history 'org-work-timer-overrun
+                                         predicate
+                                         history)))
+
+;;;; Duration functions
 ;;;;; Basic
 (defun org-work-timer-work-duration-basic ()
   "Return `org-work-timer-default-work-duration' in seconds."
@@ -182,8 +213,7 @@ function that returns the duration of a break in seconds."
 
 (defun org-work-timer-break-duration-basic ()
   "Return `org-work-timer-default-break-duration' in seconds."
-  (+ org-work-timer-time-bank
-     (* 60 org-work-timer-default-break-duration)))
+  (* 60 org-work-timer-default-break-duration))
 
 ;;;;; Pomodoro
 (defun org-work-timer-work-duration-pomodoro ()
@@ -191,40 +221,40 @@ function that returns the duration of a break in seconds."
   (* 60 org-work-timer-pomodoro-work-duration))
 
 (defun org-work-timer-break-duration-pomodoro ()
-  "Break duration in seconds according to the Pomodoro method."
-  (+ org-work-timer-time-bank
-     (if (zerop (mod (cl-count-if
-                      (lambda (elt) (eq (plist-get elt :type) 'work))
-                      org-work-timer-history)
-                     4))
-         (* 60 org-work-timer-pomodoro-break-duration-long)
-       (* 60 org-work-timer-pomodoro-break-duration-short))))
+  "Break duration in seconds according to the Pomodoro method.
+Also add total overrun time (which can be negative or positive)."
+  (let* ((long-p (zerop (mod
+                         (length
+                          (org-work-timer-process-history 'identity
+                                                          (lambda (entry) (eq (plist-get entry :type) 'work))))
+                         4)))
+         (duration (if long-p
+                       (* 60 org-work-timer-pomodoro-break-duration-long)
+                     (* 60 org-work-timer-pomodoro-break-duration-short)))
+         (overrun-sum (org-work-timer-process-history-overrun)))
+    (+ duration overrun-sum)))
 
 ;;;;; Fractional
 (defun org-work-timer-work-duration-fractional ()
   "\"Fractional\" work duration in seconds.
-
 Returns the value of `org-work-timer-fractional-work-duration' in
 seconds."
   (* 60 org-work-timer-fractional-work-duration))
 
 (defun org-work-timer-break-duration-fractional ()
   "\"Fractional\" break duration in seconds.
-
 Return, in seconds, a fraction of the time worked in the preview
 work timer. This fraction is determined by the value of
-`org-work-timer-fractional-break-duration-fraction'."
-  (let* ((work-period (car (last org-work-timer-history)))
-         (elapsed-sum (- (plist-get work-period :end)
-                         (plist-get work-period :start)))
-         (pause-sum
-          (apply #'+ (cl-loop for pause in (plist-get work-period :pauses)
-                              collect (- (plist-get pause :pause-end)
-                                         (plist-get pause :pause-start))))))
-    (max
-     (* 60 org-work-timer-default-break-duration)
-     (+ org-work-timer-time-bank
-        (* (- elapsed-sum pause-sum) org-work-timer-fractional-break-duration-fraction)))))
+`org-work-timer-fractional-break-duration-fraction'.
+
+Also add total overrun time (which can be negative or positive)."
+  (let* ((elapsed
+          (org-work-timer-elapsed-without-pauses (car (last org-work-timer-history))))
+         (overrun-sum (org-work-timer-process-history-overrun)))
+    (+ overrun-sum
+       (max
+        (* 60 org-work-timer-default-break-duration) ; Minimum duration
+        (* elapsed org-work-timer-fractional-break-duration-fraction)))))
 
 ;;;; Timers
 (defun org-work-timer-tick ()
@@ -291,26 +321,12 @@ a number representing the duration of the timer in seconds."
     (call-process-shell-command
      (format "ffplay -nodisp -autoexit %s >/dev/null 2>&1" sound) nil 0)))
 
-;;;; Other
-(defun org-work-timer-early-or-overrun-to-bank ()
-  "Add time or subtract to bank if early or overrunning in break."
-  (when (eq org-work-timer-type 'break)
-    (let ((bank
-           (org-work-timer-elapsed-without-pauses
-            (list :start (float-time (current-time))
-                  :end org-work-timer-end-time
-                  :pauses org-work-timer-pauses))))
-      (message "[org-work-timer] Adding %s seconds to bank."
-               (format-seconds "%.2m:%.2s" bank))
-      (setq org-work-timer-time-bank bank))))
-
 ;;; Commands
 ;;;; Timers
 ;;;###autoload
 (defun org-work-timer-start ()
   "Start a work timer."
   (interactive)
-  (setq org-work-timer-time-bank 0)
   (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function))
   (unless global-mode-string (setq global-mode-string '("")))
   (unless (memq 'org-work-timer-mode-line-string global-mode-string)
@@ -366,6 +382,7 @@ that action."
   (setq org-work-timer-history
         (append org-work-timer-history
                 (list (list :type org-work-timer-type
+                            :expected-duration org-work-timer-duration
                             :start org-work-timer-start-time
                             :end (float-time (current-time))
                             :pauses org-work-timer-pauses))))
@@ -388,7 +405,6 @@ that action."
         org-work-timer-pause-time nil
         org-work-timer-pauses nil
         org-work-timer-history nil
-        org-work-timer-time-bank 0
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string))
   (force-mode-line-update t))
 
@@ -410,25 +426,23 @@ that action."
                               :start org-work-timer-start-time
                               :end (float-time (current-time))
                               :pauses org-work-timer-pauses))))
-         (elapsed
+         (elapsed-total
           (- (plist-get (car (last timer-entries)) :end)
              (plist-get (first timer-entries) :start)))
-         (work-count
-          (cl-count-if (lambda (elt) (eq (plist-get elt :type) 'work))
-                       timer-entries))
-         (work-sum
-          (apply #'+ (cl-loop for entry in timer-entries
-                              if (eq (plist-get entry :type) 'work)
-                              collect (org-work-timer-elapsed-without-pauses entry))))
-         (break-count
-          (cl-count-if (lambda (elt) (eq (plist-get elt :type) 'break))
-                       timer-entries))
-         (break-sum
-          (apply #'+ (cl-loop for entry in timer-entries
-                              if (eq (plist-get entry :type) 'break)
-                              collect (org-work-timer-elapsed-without-pauses entry)))))
+         (work-count (length
+                      (org-work-timer-process-history 'identity
+                                                      (lambda (elt) (eq (plist-get elt :type) 'work)))))
+         (work-sum (apply #'+
+                          (org-work-timer-process-history 'org-work-timer-elapsed-without-pauses
+                                                          (eq (plist-get entry :type) 'work))))
+         (break-count (length
+                       (org-work-timer-process-history 'identity
+                                                       (lambda (elt) (eq (plist-get elt :type) 'break)))))
+         (break-sum (apply #'+
+                           (org-work-timer-process-history 'org-work-timer-elapsed-without-pauses
+                                                           (eq (plist-get entry :type) 'break)))))
     (message "In the last %s, you had %s work sessions and %s breaks, and worked for %s and took breaks for %s."
-             (format-seconds "%.2h hours and %.2m minutes" elapsed)
+             (format-seconds "%.2h hours and %.2m minutes" elapsed-total)
              work-count
              break-count
              (format-seconds "%.2h:%.2m:%.2s" work-sum)
