@@ -352,11 +352,9 @@ that action."
   "Finish the current timer cycle."
   (interactive)
   (run-hooks 'org-work-timer-cycle-finished-hook)
-  ;; If the user wants to end a cycle amidst a pause, then call
-  ;; `org-work-timer-pause-or-continue' to end pause (setting variables
-  ;; accordingly)
+  ;; If the user wants to end a cycle amidst a pause, then end pause first
   (when org-work-timer-pause-time
-    (org-work-timer-pause-or-continue))
+    (org-work-timer-pause-or-continue 'continue))
   (setq org-work-timer-history
         (append org-work-timer-history
                 (list (list :type org-work-timer-type
