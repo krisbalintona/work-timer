@@ -204,15 +204,6 @@ If HISTORY is provided, operate on that instead of
         (elapsed (org-work-timer-elapsed-without-pauses timer-entry)))
     (- duration elapsed)))
 
-(defun org-work-timer-process-history-overrun (&optional predicate history)
-  "Return total overrun time in `org-work-timer-history'.
-Only process that satisfy PREDICATE, if supplied. If HISTORY is
-provided, process that list instead."
-  (apply #'+
-         (org-work-timer-process-history 'org-work-timer-overrun
-                                         predicate
-                                         history)))
-
 ;;;; Duration functions
 ;;;;; Basic
 (defun org-work-timer-work-duration-basic ()
@@ -236,13 +227,18 @@ Also add total overrun time (which can be negative or positive)."
                           (org-work-timer-process-history 'identity
                                                           (lambda (entry) (eq (plist-get entry :type) 'work))))
                          4)))
-         (overrun-sum (org-work-timer-process-history-overrun))
+         (overrun
+          (apply #'+ (last (org-work-timer-process-history 'org-work-timer-overrun
+                                                           (lambda (entry)
+                                                             (member (plist-get entry :type)
+                                                                     '(work break))))
+                           2)))
          duration)
-    (setq duration (+ overrun-sum
+    (setq duration (+ overrun
                       (if long-p
                           (* 60 org-work-timer-pomodoro-break-duration-long)
                         (* 60 org-work-timer-pomodoro-break-duration-short))))
-    (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Overrun: %s" overrun-sum)
+    (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Overrun: %s" overrun)
     (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Break duration: %s" duration)
     duration))
 
@@ -263,9 +259,14 @@ Also add total overrun time (which can be negative or positive)."
   (let* ((work-period (car (last org-work-timer-history)))
          (elapsed-total (- (plist-get work-period :end)
                            (plist-get work-period :start)))
-         (overrun-sum (org-work-timer-process-history-overrun))
+         (overrun                   ; TODO 2023-08-23: Add explanation for this
+          (apply #'+ (last (org-work-timer-process-history 'org-work-timer-overrun
+                                                           (lambda (entry)
+                                                             (member (plist-get entry :type)
+                                                                     '(work break))))
+                           2)))
          duration)
-    (setq duration (+ overrun-sum
+    (setq duration (+ overrun
                       (max
                        (* 60 org-work-timer-default-break-duration) ; Minimum duration
                        (* elapsed-total org-work-timer-fractional-break-duration-fraction))))
