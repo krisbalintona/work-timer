@@ -410,6 +410,8 @@ that action."
 (defun org-work-timer-cycle-finish ()
   "Finish the current timer cycle."
   (interactive)
+  (unless (timerp org-work-timer-current-timer)
+    (user-error "[org-work-timer] No timer running!"))
   (run-hooks 'org-work-timer-cycle-finished-hook)
   ;; If the user wants to end a cycle amidst a pause, then end pause first
   (when org-work-timer-pause-time
