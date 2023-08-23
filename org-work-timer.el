@@ -446,11 +446,11 @@ that action."
   (org-work-timer-log "(org-work-timer-end) Timer ended"))
 
 ;;;###autoload
-(defun org-work-timer-start-or-end ()
-  "Conditionally start or end a timer."
+(defun org-work-timer-start-or-finish ()
+  "Conditionally start a timer or finish a cycle."
   (interactive)
   (if (timerp org-work-timer-current-timer)
-      (org-work-timer-end)
+      (org-work-timer-cycle-finish)
     (org-work-timer-start)))
 
 ;;;; Convenience
@@ -492,7 +492,7 @@ that action."
   "p" #'org-work-timer-pause-or-continue
   "f" #'org-work-timer-cycle-finish
   "e" #'org-work-timer-end
-  "w" #'org-work-timer-start-or-end
+  "w" #'org-work-timer-start-or-finish
   "r" #'org-work-timer-report)
 
 ;;; Org-clock integration
