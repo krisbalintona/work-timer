@@ -256,14 +256,17 @@ a number representing the duration of the timer in seconds."
   "Set `org-work-timer-mode-line-string' appropriately."
   (let* ((type
           (capitalize (symbol-name org-work-timer-type)))
+         (elapsed
+          (org-work-timer-elapsed-without-pauses
+           (list :start org-work-timer-start-time
+                 :end (float-time (current-time))
+                 :pauses org-work-timer-pauses)))
          (running
-          (format-seconds org-work-timer-time-format
-                          (org-work-timer-elapsed-without-pauses
-                           (list :start org-work-timer-start-time
-                                 :end (float-time (current-time))
-                                 :pauses org-work-timer-pauses))))
+          (concat (when (< elapsed 0) "-")
+                  (format-seconds org-work-timer-time-format (abs elapsed))))
          (duration
-          (format-seconds org-work-timer-time-format org-work-timer-duration))
+          (concat (when (< org-work-timer-duration 0) "-")
+                  (format-seconds org-work-timer-time-format (abs org-work-timer-duration))))
          (mode-line-string
           (concat "[" (format "%s: %s/%s" type running duration) "] ")))
     (setq org-work-timer-mode-line-string
