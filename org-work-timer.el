@@ -36,6 +36,14 @@
   :tag "Org work timer"
   :group 'org-progress)
 
+(defcustom org-work-timer-debug nil
+  "Whether log messages should be printed.
+Messages will be printed to the \"*Messages*\" buffer and
+`org-work-timer-log-buffer-name' buffer.")
+
+(defcustom org-work-timer-log-buffer-name "*Org-work-timer Logs*"
+  "Name of log buffer for org-work-timer.")
+
 (defcustom org-work-timer-time-format "%h:%.2m"
   "Defines the format of the time representation in the modeline.
 
@@ -228,11 +236,14 @@ Also add total overrun time (which can be negative or positive)."
                           (org-work-timer-process-history 'identity
                                                           (lambda (entry) (eq (plist-get entry :type) 'work))))
                          4)))
-         (duration (if long-p
+         (overrun-sum (org-work-timer-process-history-overrun))
+         duration)
+    (setq break (+ overrun-sum
+                   (if long-p
                        (* 60 org-work-timer-pomodoro-break-duration-long)
-                     (* 60 org-work-timer-pomodoro-break-duration-short)))
-         (overrun-sum (org-work-timer-process-history-overrun)))
-    (+ duration overrun-sum)))
+                     (* 60 org-work-timer-pomodoro-break-duration-short))))
+    (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Overrun: %s" overrun-sum)
+    (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Break duration: %s" duration)))
 
 ;;;;; Fractional
 (defun org-work-timer-work-duration-fractional ()
@@ -250,11 +261,14 @@ work timer. This fraction is determined by the value of
 Also add total overrun time (which can be negative or positive)."
   (let* ((elapsed
           (org-work-timer-elapsed-without-pauses (car (last org-work-timer-history))))
-         (overrun-sum (org-work-timer-process-history-overrun)))
-    (+ overrun-sum
-       (max
-        (* 60 org-work-timer-default-break-duration) ; Minimum duration
-        (* elapsed org-work-timer-fractional-break-duration-fraction)))))
+         (overrun-sum (org-work-timer-process-history-overrun))
+         duration)
+    (setq duration (+ overrun-sum
+                      (max
+                       (* 60 org-work-timer-default-break-duration) ; Minimum duration
+                       (* elapsed org-work-timer-fractional-break-duration-fraction))))
+    (org-work-timer-log "(org-work-timer-break-duration-fractional) Overrun: %s" overrun-sum)
+    (org-work-timer-log "(org-work-timer-break-duration-fractional) Break duration: %s" duration)))
 
 ;;;; Timers
 (defun org-work-timer-tick ()
@@ -321,6 +335,24 @@ a number representing the duration of the timer in seconds."
     (call-process-shell-command
      (format "ffplay -nodisp -autoexit %s >/dev/null 2>&1" sound) nil 0)))
 
+;;;; Log messages
+(defun org-work-timer-log (format-string &rest objects)
+  "Pass FORMAT-STRING and OBJECTS to `format' and log result to log buffer.
+The log buffer's name is set by `org-work-timer-log-buffer-name'."
+  (when org-work-timer-debug
+    (with-current-buffer (get-buffer-create org-work-timer-log-buffer-name)
+      (goto-char (point-max))
+      (let* ((face '(:weight bold :inherit warning))
+             (timestamp (format-time-string "[%F %T] " (current-time)))
+             (str (concat (propertize timestamp 'face face)
+                          (apply 'format format-string objects)))
+             (propertized-str
+              (propertize str 'face '(:weight bold)))
+             (prefix
+              (propertize "[org-work-timer] " 'face face)))
+        (message (concat prefix str))
+        (insert propertized-str "\n")))))
+
 ;;; Commands
 ;;;; Timers
 ;;;###autoload
@@ -331,7 +363,8 @@ a number representing the duration of the timer in seconds."
   (unless global-mode-string (setq global-mode-string '("")))
   (unless (memq 'org-work-timer-mode-line-string global-mode-string)
     (setq global-mode-string
-          (append global-mode-string '(org-work-timer-mode-line-string)))))
+          (append global-mode-string '(org-work-timer-mode-line-string))))
+  (org-work-timer-log "(org-work-timer-start) Timer started"))
 
 ;;;###autoload
 (defun org-work-timer-pause-or-continue (&optional pause-or-continue)
@@ -350,6 +383,7 @@ that action."
     (pcase pause-or-continue
       ('continue
        (when org-work-timer-pause-time    ; Do nothing if not currently paused
+         (org-work-timer-log "(org-work-timer-pause-or-continue) Timer continued")
          ;; Move back `org-work-timer-end-time' for how long timer was paused
          (setq org-work-timer-end-time (float-time
                                         (time-add org-work-timer-end-time
@@ -362,6 +396,7 @@ that action."
                pauses-modified-p t)))
       ('pause
        (unless org-work-timer-pause-time  ; Do nothing if already paused
+         (org-work-timer-log "(org-work-timer-pause-or-continue) Timer paused")
          (setq org-work-timer-pause-time (float-time (current-time))
                org-work-timer-pauses
                (append org-work-timer-pauses
@@ -390,7 +425,8 @@ that action."
     ('break
      (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function)))
     (t
-     (org-work-timer-set-timer 'break (funcall org-work-timer-break-duration-function)))))
+     (org-work-timer-set-timer 'break (funcall org-work-timer-break-duration-function))))
+  (org-work-timer-log "(org-work-timer-cycle-finish) Cycle finished"))
 
 ;;;###autoload
 (defun org-work-timer-end ()
@@ -406,7 +442,8 @@ that action."
         org-work-timer-pauses nil
         org-work-timer-history nil
         global-mode-string (remove 'org-work-timer-mode-line-string global-mode-string))
-  (force-mode-line-update t))
+  (force-mode-line-update t)
+  (org-work-timer-log "(org-work-timer-end) Timer ended"))
 
 ;;;###autoload
 (defun org-work-timer-start-or-end ()
@@ -466,9 +503,11 @@ timer is a work one."
   (cond
    ((not (eq org-work-timer-type 'work)))
    ((timerp org-work-timer-current-timer)
-    (org-work-timer-pause-or-continue 'continue))
+    (org-work-timer-pause-or-continue 'continue)
+    (org-work-timer-log "(org-work-timer-org-clock-in) Timer continued"))
    (t
-    (org-work-timer-start))))
+    (org-work-timer-start)
+    (org-work-timer-log "(org-work-timer-org-clock-in) Timer started"))))
 
 (defun org-work-timer-org-clock-out ()
   "Function added to `org-clock-out-hook'.
@@ -476,7 +515,8 @@ Pause the current timer if it is a work one."
   (cond
    ((not (eq org-work-timer-type 'work)))
    ((timerp org-work-timer-current-timer)
-    (org-work-timer-pause-or-continue 'pause))))
+    (org-work-timer-pause-or-continue 'pause)
+    (org-work-timer-log "(org-work-timer-org-clock-out) Timer paused"))))
 
 ;;;###autoload
 (define-minor-mode org-work-timer-with-org-clock-mode
