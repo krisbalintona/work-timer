@@ -202,7 +202,7 @@ If HISTORY is provided, operate on that instead of
   ;; 0, instead?
   (let ((duration (plist-get timer-entry :expected-duration))
         (elapsed (org-work-timer-elapsed-without-pauses timer-entry)))
-    (- elapsed duration)))
+    (- duration elapsed)))
 
 (defun org-work-timer-process-history-overrun (&optional predicate history)
   "Return total overrun time in `org-work-timer-history'.
@@ -269,7 +269,7 @@ Also add total overrun time (which can be negative or positive)."
                       (max
                        (* 60 org-work-timer-default-break-duration) ; Minimum duration
                        (* elapsed-total org-work-timer-fractional-break-duration-fraction))))
-    (org-work-timer-log "(org-work-timer-break-duration-fractional) Overrun: %s" overrun-sum)
+    (org-work-timer-log "(org-work-timer-break-duration-fractional) Overrun: %s" overrun)
     (org-work-timer-log "(org-work-timer-break-duration-fractional) Break duration: %s" duration)
     duration))
 
