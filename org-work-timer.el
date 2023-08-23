@@ -239,8 +239,8 @@ Also add total overrun time (which can be negative or positive)."
                       (if long-p
                           (* 60 org-work-timer-pomodoro-break-duration-long)
                         (* 60 org-work-timer-pomodoro-break-duration-short))))
-    (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Overrun: %s" overrun)
     (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Break duration: %s" duration)
+    (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Overrun: %s" overrun)
     duration))
 
 ;;;;; Fractional
@@ -271,8 +271,8 @@ Also add total overrun time (which can be negative or positive)."
                       (max
                        (* 60 org-work-timer-default-break-duration) ; Minimum duration
                        (* elapsed-total org-work-timer-fractional-break-duration-fraction))))
-    (org-work-timer-log "(org-work-timer-break-duration-fractional) Overrun: %s" overrun)
     (org-work-timer-log "(org-work-timer-break-duration-fractional) Break duration: %s" duration)
+    (org-work-timer-log "(org-work-timer-break-duration-fractional) Overrun: %s" overrun)
     duration))
 
 ;;;; Timers
