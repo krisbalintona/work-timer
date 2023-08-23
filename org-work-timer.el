@@ -437,10 +437,15 @@ that action."
 
 ;;; Org-clock integration
 (defun org-work-timer-org-clock-in ()
-  "Function added to `org-clock-in-hook'."
-  (if (timerp org-work-timer-current-timer)
-      (org-work-timer-pause-or-continue 'continue)
-    (org-work-timer-start)))
+  "Function added to `org-clock-in-hook'.
+Either start a timer or continue an existing one if the current
+timer is a work one."
+  (cond
+   ((not (eq org-work-timer-type 'work)))
+   ((timerp org-work-timer-current-timer)
+    (org-work-timer-pause-or-continue 'continue))
+   (t
+    (org-work-timer-start))))
 
 (defun org-work-timer-org-clock-out ()
   "Function added to `org-clock-out-hook'."
