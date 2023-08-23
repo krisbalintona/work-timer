@@ -118,7 +118,7 @@ function that returns the duration of a break in seconds."
   :group 'org-work-timer
   :type 'number)
 
-(defcustom org-work-timer-cycle-finished-hook '(org-work-timer-early-or-overrun-to-bank)
+(defcustom org-work-timer-cycle-finished-hook nil
   "Hook run before `org-work-timer-cycle-finish' is called."
   :type 'hook
   :group 'org-work-timer)
