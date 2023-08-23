@@ -457,6 +457,8 @@ that action."
 (defun org-work-timer-report ()
   "Print the statistics of this series of timers."
   (interactive)
+  (unless (timerp org-work-timer-current-timer)
+    (user-error "[org-work-timer] No timer running!"))
   (let* ((timer-entries
           (append org-work-timer-history
                   (list (list :type org-work-timer-type
