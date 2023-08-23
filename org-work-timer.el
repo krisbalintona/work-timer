@@ -419,7 +419,7 @@ that action."
                               if (eq (plist-get entry :type) 'break)
                               collect (org-work-timer-elapsed-without-pauses entry)))))
     (message "In the last %s, you had %s work sessions and %s breaks, and worked for %s and took breaks for %s."
-             (format-seconds "%.2h hours and %.2m mintues" elapsed)
+             (format-seconds "%.2h hours and %.2m minutes" elapsed)
              work-count
              break-count
              (format-seconds "%.2h:%.2m:%.2s" work-sum)
