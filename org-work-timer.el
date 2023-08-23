@@ -126,6 +126,10 @@ function that returns the duration of a break in seconds."
   "Mode line string for the current work timer.")
 (put 'org-work-timer-mode-line-string 'risky-local-variable t)
 
+(defvar org-work-timer-overrun-p nil
+  "Whether running time has exceeded expected duration.")
+(put 'org-work-timer-overrun-p 'risky-local-variable t)
+
 (defvar org-work-timer-current-timer nil
   "The current work timer.")
 
@@ -228,13 +232,16 @@ work timer. This fraction is determined by the value of
 Updates the mode line and plays a sound if the the duration of
 the current timer is reached."
   (org-work-timer-update-mode-line)
-  (when (equal (floor (- org-work-timer-duration
-                         (org-work-timer-elapsed-without-pauses
-                          (list :start org-work-timer-start-time
-                                :end (float-time (current-time))
-                                :pauses org-work-timer-pauses))))
-               0)
-    (org-work-timer-play-sound)))
+  (let ((elapsed
+         (floor (- org-work-timer-duration
+                   (org-work-timer-elapsed-without-pauses
+                    (list :start org-work-timer-start-time
+                          :end (float-time (current-time))
+                          :pauses org-work-timer-pauses))))))
+    (when (and (not org-work-timer-overrun-p)
+               (<= elapsed 0))
+      (org-work-timer-play-sound)
+      (setq org-work-timer-overrun-p t))))
 
 (defun org-work-timer-set-timer (type duration)
   "Create a timer and set the appropriate variables.
@@ -248,6 +255,7 @@ a number representing the duration of the timer in seconds."
         org-work-timer-end-time (float-time (time-add (current-time) duration))
         org-work-timer-pauses nil
         org-work-timer-pause-time nil
+        org-work-timer-overrun-p nil
         org-work-timer-current-timer (run-with-timer t 1 'org-work-timer-tick))
   (org-work-timer-update-mode-line))
 
