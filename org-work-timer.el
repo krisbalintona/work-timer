@@ -203,7 +203,7 @@ If HISTORY is provided, operate on that instead of
   "Given TIMER-ENTRY, return seconds overran."
   (let ((duration (plist-get timer-entry :expected-duration))
         (elapsed (org-work-timer-elapsed-without-pauses timer-entry)))
-    (- duration elapsed)))
+    (- elapsed duration)))
 
 ;;;; Duration functions
 ;;;;; Basic
