@@ -425,9 +425,17 @@ that action."
                             :pauses org-work-timer-pauses))))
   (pcase org-work-timer-type
     ('break
-     (org-work-timer-set-timer 'work (funcall org-work-timer-work-duration-function)))
+     (org-work-timer-set-timer 'work
+                               (condition-case err
+                                   (funcall org-work-timer-work-duration-function)
+                                 (error
+                                  (message "[org-work-timer] (org-work-timer-cycle-finish): %s" err)))))
     (t
-     (org-work-timer-set-timer 'break (funcall org-work-timer-break-duration-function))))
+     (org-work-timer-set-timer 'break
+                               (condition-case err
+                                   (funcall org-work-timer-break-duration-function)
+                                 (error
+                                  (message "[org-work-timer] (org-work-timer-cycle-finish): %s" err))))))
   (org-work-timer-log "(org-work-timer-cycle-finish) Cycle finished"))
 
 ;;;###autoload
