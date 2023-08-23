@@ -238,12 +238,13 @@ Also add total overrun time (which can be negative or positive)."
                          4)))
          (overrun-sum (org-work-timer-process-history-overrun))
          duration)
-    (setq break (+ overrun-sum
-                   (if long-p
-                       (* 60 org-work-timer-pomodoro-break-duration-long)
-                     (* 60 org-work-timer-pomodoro-break-duration-short))))
+    (setq duration (+ overrun-sum
+                      (if long-p
+                          (* 60 org-work-timer-pomodoro-break-duration-long)
+                        (* 60 org-work-timer-pomodoro-break-duration-short))))
     (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Overrun: %s" overrun-sum)
-    (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Break duration: %s" duration)))
+    (org-work-timer-log "(org-work-timer-break-duration-pomodoro) Break duration: %s" duration)
+    duration))
 
 ;;;;; Fractional
 (defun org-work-timer-work-duration-fractional ()
@@ -259,16 +260,18 @@ work timer. This fraction is determined by the value of
 `org-work-timer-fractional-break-duration-fraction'.
 
 Also add total overrun time (which can be negative or positive)."
-  (let* ((elapsed
-          (org-work-timer-elapsed-without-pauses (car (last org-work-timer-history))))
+  (let* ((work-period (car (last org-work-timer-history)))
+         (elapsed-total (- (plist-get work-period :end)
+                           (plist-get work-period :start)))
          (overrun-sum (org-work-timer-process-history-overrun))
          duration)
     (setq duration (+ overrun-sum
                       (max
                        (* 60 org-work-timer-default-break-duration) ; Minimum duration
-                       (* elapsed org-work-timer-fractional-break-duration-fraction))))
+                       (* elapsed-total org-work-timer-fractional-break-duration-fraction))))
     (org-work-timer-log "(org-work-timer-break-duration-fractional) Overrun: %s" overrun-sum)
-    (org-work-timer-log "(org-work-timer-break-duration-fractional) Break duration: %s" duration)))
+    (org-work-timer-log "(org-work-timer-break-duration-fractional) Break duration: %s" duration)
+    duration))
 
 ;;;; Timers
 (defun org-work-timer-tick ()
