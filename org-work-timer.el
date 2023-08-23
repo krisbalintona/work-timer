@@ -457,9 +457,12 @@ timer is a work one."
     (org-work-timer-start))))
 
 (defun org-work-timer-org-clock-out ()
-  "Function added to `org-clock-out-hook'."
-  (when (timerp org-work-timer-current-timer)
-    (org-work-timer-pause-or-continue 'pause)))
+  "Function added to `org-clock-out-hook'.
+Pause the current timer if it is a work one."
+  (cond
+   ((not (eq org-work-timer-type 'work)))
+   ((timerp org-work-timer-current-timer)
+    (org-work-timer-pause-or-continue 'pause))))
 
 ;;;###autoload
 (define-minor-mode org-work-timer-with-org-clock-mode
