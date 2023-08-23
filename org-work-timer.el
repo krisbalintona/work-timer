@@ -44,7 +44,8 @@ The acceptable formats are those taken from `format-seconds'."
   :type 'string)
 
 (defcustom org-work-timer-sound "microwave-beep.mp3"
-  "Sound played once a timer's duration finishes."
+  "Sound played once a timer's duration finishes.
+Accepted file types are those that `ffplay' can run."
   :group 'org-work-timer
   :type 'string)
 
