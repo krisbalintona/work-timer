@@ -324,20 +324,16 @@ decreases if you take a longer break than expected."
   (* 60 work-timer-pomodoro-work-duration))
 
 (defun work-timer-break-duration-pomodoro ()
-  "Break duration in seconds according to the Pomodoro method.
-Also add total surplus time (which can be negative or positive)."
+  "Break duration in seconds according to the Pomodoro method."
   (let* ((long-p (zerop (mod
                          (length
                           (work-timer-process-history 'identity
                                                       (lambda (entry) (eq (plist-get entry :type) 'work))))
                          4)))
-         (surplus (work-timer-surplus-break-duration))
-         (duration (+ surplus
-                      (if long-p
-                          (* 60 work-timer-pomodoro-break-duration-long)
-                        (* 60 work-timer-pomodoro-break-duration-short)))))
+         (duration (if long-p
+                       (* 60 work-timer-pomodoro-break-duration-long)
+                     (* 60 work-timer-pomodoro-break-duration-short))))
     (work-timer-log "(work-timer-break-duration-pomodoro) Break duration: %s" duration)
-    (work-timer-log "(work-timer-break-duration-pomodoro) Surplus: %s" surplus)
     duration))
 
 ;;;;; Fractional
@@ -357,15 +353,8 @@ Also add total surplus time (which can be negative or positive)."
   (let* ((work-period (car (last work-timer-history)))
          (elapsed-total (- (plist-get work-period :end)
                            (plist-get work-period :start)))
-         (last-break
-          (cl-find-if (lambda (entry) (equal (plist-get entry :type) 'break))
-                      (nreverse work-timer-history)))
-         (break-surplus
-          (if last-break (work-timer-overrun last-break) 0))
-         (duration (+ break-surplus
-                      (* elapsed-total work-timer-fractional-break-duration-fraction))))
+         (duration (* elapsed-total work-timer-fractional-break-duration-fraction)))
     (work-timer-log "(work-timer-break-duration-fractional) Break duration: %s" duration)
-    (work-timer-log "(work-timer-break-duration-fractional) Break surplus: %s" break-surplus)
     duration))
 
 ;;; Commands
