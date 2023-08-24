@@ -134,8 +134,6 @@ function that returns the duration of a break in seconds."
   "Mode line string for the current work timer.")
 (put 'work-timer-mode-line-string 'risky-local-variable t)
 
-;; REVIEW 2023-08-23: Potentially rename overrun to one of: surplus, overflow,
-;; spill, excess
 (defvar work-timer-overrun-p nil
   "Whether running time has exceeded expected duration.")
 (put 'work-timer-overrun-p 'risky-local-variable t)
@@ -304,11 +302,11 @@ decreases if you take a longer break than expected."
          (last-break
           (cl-find-if (lambda (entry) (equal (plist-get entry :type) 'break))
                       reverse-history))
-         (work-overrun
+         (work-surplus
           (if last-work (work-timer-overrun last-work) 0))
-         (break-overrun
+         (break-surplus
           (if last-break (work-timer-overrun last-break) 0)))
-    (+ work-overrun (- break-overrun))))
+    (+ work-surplus (- break-surplus))))
 
 ;;;; Duration functions
 ;;;;; Basic
@@ -327,19 +325,19 @@ decreases if you take a longer break than expected."
 
 (defun work-timer-break-duration-pomodoro ()
   "Break duration in seconds according to the Pomodoro method.
-Also add total overrun time (which can be negative or positive)."
+Also add total surplus time (which can be negative or positive)."
   (let* ((long-p (zerop (mod
                          (length
                           (work-timer-process-history 'identity
                                                       (lambda (entry) (eq (plist-get entry :type) 'work))))
                          4)))
-         (overrun (work-timer-surplus-break-duration))
-         (duration (+ overrun
+         (surplus (work-timer-surplus-break-duration))
+         (duration (+ surplus
                       (if long-p
                           (* 60 work-timer-pomodoro-break-duration-long)
                         (* 60 work-timer-pomodoro-break-duration-short)))))
     (work-timer-log "(work-timer-break-duration-pomodoro) Break duration: %s" duration)
-    (work-timer-log "(work-timer-break-duration-pomodoro) Overrun: %s" overrun)
+    (work-timer-log "(work-timer-break-duration-pomodoro) Surplus: %s" surplus)
     duration))
 
 ;;;;; Fractional
@@ -355,15 +353,15 @@ Return, in seconds, a fraction of the time worked in the preview
 work timer. This fraction is determined by the value of
 `work-timer-fractional-break-duration-fraction'.
 
-Also add total overrun time (which can be negative or positive)."
+Also add total surplus time (which can be negative or positive)."
   (let* ((work-period (car (last work-timer-history)))
          (elapsed-total (- (plist-get work-period :end)
                            (plist-get work-period :start)))
-         (overrun (work-timer-surplus-break-duration))
-         (duration (+ overrun
+         (surplus (work-timer-surplus-break-duration))
+         (duration (+ surplus
                       (* elapsed-total work-timer-fractional-break-duration-fraction))))
     (work-timer-log "(work-timer-break-duration-fractional) Break duration: %s" duration)
-    (work-timer-log "(work-timer-break-duration-fractional) Overrun: %s" overrun)
+    (work-timer-log "(work-timer-break-duration-fractional) Surplus: %s" surplus)
     duration))
 
 ;;; Commands
