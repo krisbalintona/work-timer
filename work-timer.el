@@ -311,23 +311,26 @@ a number representing the duration of the timer in seconds."
 ;;;; Mode line
 (defun work-timer-update-mode-line ()
   "Set `work-timer-mode-line-string' appropriately."
-  (let* ((type
+  (let* ((type-string
           (capitalize (symbol-name work-timer-type)))
-         (elapsed
-          (work-timer-elapsed-without-pauses
-           (list :start work-timer-start-time
-                 :end (float-time (current-time))
-                 :pauses work-timer-pauses)))
-         (running
+         (elapsed (work-timer-elapsed-without-pauses
+                   (list :start work-timer-start-time
+                         :end (float-time (current-time))
+                         :pauses work-timer-pauses)))
+         (running-string
           (concat (when (< elapsed 0) "-")
                   (format-seconds work-timer-time-format (abs elapsed))))
-         (duration
+         (duration-string
           (concat (when (< work-timer-duration 0) "-")
                   (format-seconds work-timer-time-format (abs work-timer-duration))))
          (mode-line-string
-          (concat "[" (format "%s: %s/%s" type running duration) "] ")))
-    (setq work-timer-mode-line-string
-          (propertize mode-line-string 'face 'work-timer-mode-line)))
+          (format (propertize "[%s: %s/%s] " 'face 'work-timer-mode-line)
+                  type-string
+                  (if (< work-timer-duration elapsed)
+                      (propertize running-string 'face 'org-mode-line-clock-overrun)
+                    running-string)
+                  duration-string)))
+    (setq work-timer-mode-line-string mode-line-string))
   (force-mode-line-update t))
 
 ;;;; Sound
