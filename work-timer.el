@@ -535,15 +535,6 @@ timer is a work one."
     (work-timer-start)
     (work-timer-log "(work-timer-org-clock-in) Timer started"))))
 
-(defun work-timer-org-clock-out ()
-  "Function added to `org-clock-out-hook'.
-Pause the current timer if it is a work one."
-  (cond
-   ((not (eq work-timer-type 'work)))
-   ((timerp work-timer-current-timer)
-    (work-timer-pause-or-continue 'pause)
-    (work-timer-log "(work-timer-org-clock-out) Timer paused"))))
-
 ;;;###autoload
 (define-minor-mode work-timer-with-org-clock-mode
   "Global minor mode that integrates with work-timer with org-clock."
@@ -551,13 +542,9 @@ Pause the current timer if it is a work one."
   :group 'work-timer
   (cond
    (work-timer-with-org-clock-mode
-    (add-hook 'org-clock-in-hook 'work-timer-org-clock-in)
-    (add-hook 'org-clock-out-hook 'work-timer-org-clock-out)
-    (add-hook 'org-clock-cancel-hook 'work-timer-org-clock-out))
+    (add-hook 'org-clock-in-hook 'work-timer-org-clock-in))
    (t
-    (remove-hook 'org-clock-in-hook 'work-timer-org-clock-in)
-    (remove-hook 'org-clock-out-hook 'work-timer-org-clock-out)
-    (remove-hook 'org-clock-cancel-hook 'work-timer-org-clock-out))))
+    (remove-hook 'org-clock-in-hook 'work-timer-org-clock-in))))
 
 (provide 'work-timer)
 ;;; work-timer.el ends here
