@@ -205,6 +205,26 @@ If HISTORY is provided, operate on that instead of
         (elapsed (work-timer-elapsed-without-pauses timer-entry)))
     (- elapsed duration)))
 
+(defun work-timer-surplus-break-duration ()
+  "Return surplus duration.
+The value is the sum of a two-step calculation. The first step
+adds the overrun time of the last work period. The second
+subtracts the overrun time of the last break period. In other
+words, the surplus duration increases if you work extra, and
+decreases if you take a longer break than expected."
+  (let* ((reverse-history (nreverse work-timer-history))
+         (last-work
+          (cl-find-if (lambda (entry) (equal (plist-get entry :type) 'work))
+                      reverse-history))
+         (last-break
+          (cl-find-if (lambda (entry) (equal (plist-get entry :type) 'break))
+                      reverse-history))
+         (work-overrun
+          (if last-work (work-timer-overrun last-work) 0))
+         (break-overrun
+          (if last-break (work-timer-overrun last-break) 0)))
+    (+ work-overrun (- break-overrun))))
+
 ;;;; Duration functions
 ;;;;; Basic
 (defun work-timer-work-duration-basic ()
@@ -228,17 +248,11 @@ Also add total overrun time (which can be negative or positive)."
                           (work-timer-process-history 'identity
                                                       (lambda (entry) (eq (plist-get entry :type) 'work))))
                          4)))
-         (overrun                    ; TODO 2023-08-23: Add explanation for this
-          (apply #'+ (last (work-timer-process-history 'work-timer-overrun
-                                                       (lambda (entry)
-                                                         (member (plist-get entry :type)
-                                                                 '(work break))))
-                           2)))
-         duration)
-    (setq duration (+ overrun
+         (overrun (work-timer-surplus-break-duration))
+         (duration (+ overrun
                       (if long-p
                           (* 60 work-timer-pomodoro-break-duration-long)
-                        (* 60 work-timer-pomodoro-break-duration-short))))
+                        (* 60 work-timer-pomodoro-break-duration-short)))))
     (work-timer-log "(work-timer-break-duration-pomodoro) Break duration: %s" duration)
     (work-timer-log "(work-timer-break-duration-pomodoro) Overrun: %s" overrun)
     duration))
@@ -260,17 +274,9 @@ Also add total overrun time (which can be negative or positive)."
   (let* ((work-period (car (last work-timer-history)))
          (elapsed-total (- (plist-get work-period :end)
                            (plist-get work-period :start)))
-         (overrun                   ; TODO 2023-08-23: Add explanation for this
-          (apply #'+ (last (work-timer-process-history 'work-timer-overrun
-                                                       (lambda (entry)
-                                                         (member (plist-get entry :type)
-                                                                 '(work break))))
-                           2)))
-         duration)
-    (setq duration (+ overrun
-                      (max
-                       (* 60 work-timer-default-break-duration) ; Minimum duration
-                       (* elapsed-total work-timer-fractional-break-duration-fraction))))
+         (overrun (work-timer-surplus-break-duration))
+         (duration (+ overrun
+                      (* elapsed-total work-timer-fractional-break-duration-fraction))))
     (work-timer-log "(work-timer-break-duration-fractional) Break duration: %s" duration)
     (work-timer-log "(work-timer-break-duration-fractional) Overrun: %s" overrun)
     duration))
