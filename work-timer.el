@@ -167,6 +167,91 @@ function that returns the duration of a break in seconds."
   "Mode line string for the current work timer.")
 
 ;;; Functions
+;;;; Log messages
+(defun work-timer-log (format-string &rest objects)
+  "Pass FORMAT-STRING and OBJECTS to `format' and log result to log buffer.
+The log buffer's name is set by `work-timer-log-buffer-name'."
+  (when work-timer-debug
+    (with-current-buffer (get-buffer-create work-timer-log-buffer-name)
+      (goto-char (point-max))
+      (let* ((face '(:weight bold :inherit warning))
+             (timestamp (format-time-string "[%F %T] " (current-time)))
+             (str (concat (propertize timestamp 'face face)
+                          (apply 'format format-string objects)))
+             (propertized-str
+              (propertize str 'face '(:weight bold)))
+             (prefix
+              (propertize "[work-timer] " 'face face)))
+        (message (concat prefix str))
+        (insert propertized-str "\n")))))
+
+;;;; Timers
+(defun work-timer-set-timer (type duration)
+  "Create a timer and set the appropriate variables.
+TYPE is a symbol representing the type of the timer. DURATION is
+a number representing the duration of the timer in seconds."
+  (when (timerp work-timer-current-timer)
+    (cancel-timer work-timer-current-timer))
+  (setq work-timer-type type
+        work-timer-start-time (float-time (current-time))
+        work-timer-duration duration
+        work-timer-end-time (float-time (time-add (current-time) duration))
+        work-timer-pauses nil
+        work-timer-pause-time nil
+        work-timer-overrun-p nil
+        work-timer-current-timer (run-with-timer t 1 'work-timer-tick))
+  (work-timer-update-mode-line))
+
+;;;; Mode line
+(defun work-timer-update-mode-line ()
+  "Set `work-timer-mode-line-string' appropriately."
+  (let* ((type-string
+          (capitalize (symbol-name work-timer-type)))
+         (elapsed (work-timer-elapsed-without-pauses
+                   (list :start work-timer-start-time
+                         :end (float-time (current-time))
+                         :pauses work-timer-pauses)))
+         (running-string
+          (concat (when (< elapsed 0) "-")
+                  (format-seconds work-timer-time-format (abs elapsed))))
+         (duration-string
+          (concat (when (< work-timer-duration 0) "-")
+                  (format-seconds work-timer-time-format (abs work-timer-duration))))
+         (mode-line-string
+          (format (propertize "[%s: %s/%s] " 'face 'work-timer-mode-line)
+                  type-string
+                  (if (< work-timer-duration elapsed)
+                      (propertize running-string 'face 'org-mode-line-clock-overrun)
+                    running-string)
+                  duration-string)))
+    (setq work-timer-mode-line-string mode-line-string))
+  (force-mode-line-update t))
+
+(defun work-timer-play-sound ()
+  "Play audio for a timer's end."
+  (when-let ((sound (expand-file-name work-timer-sound))
+             ((file-exists-p sound)))
+    (unless (executable-find "ffplay")
+      (user-error "Cannot play %s without `ffplay'" sound))
+    (call-process-shell-command
+     (format "ffplay -nodisp -autoexit %s >/dev/null 2>&1" sound) nil 0)))
+
+(defun work-timer-tick ()
+  "A function invoked by `work-timer-current-timer' each second.
+Updates the mode line and plays a sound if the the duration of
+the current timer is reached."
+  (work-timer-update-mode-line)
+  (let ((elapsed
+         (floor (- work-timer-duration
+                   (work-timer-elapsed-without-pauses
+                    (list :start work-timer-start-time
+                          :end (float-time (current-time))
+                          :pauses work-timer-pauses))))))
+    (when (and (not work-timer-overrun-p)
+               (<= elapsed 0))
+      (work-timer-play-sound)
+      (setq work-timer-overrun-p t))))
+
 ;;;; Processing timer history
 (defun work-timer-process-history (function predicate &optional history)
   "Process all entries in `work-timer-history'.
@@ -280,92 +365,6 @@ Also add total overrun time (which can be negative or positive)."
     (work-timer-log "(work-timer-break-duration-fractional) Break duration: %s" duration)
     (work-timer-log "(work-timer-break-duration-fractional) Overrun: %s" overrun)
     duration))
-
-;;;; Timers
-(defun work-timer-tick ()
-  "A function invoked by `work-timer-current-timer' each second.
-Updates the mode line and plays a sound if the the duration of
-the current timer is reached."
-  (work-timer-update-mode-line)
-  (let ((elapsed
-         (floor (- work-timer-duration
-                   (work-timer-elapsed-without-pauses
-                    (list :start work-timer-start-time
-                          :end (float-time (current-time))
-                          :pauses work-timer-pauses))))))
-    (when (and (not work-timer-overrun-p)
-               (<= elapsed 0))
-      (work-timer-play-sound)
-      (setq work-timer-overrun-p t))))
-
-(defun work-timer-set-timer (type duration)
-  "Create a timer and set the appropriate variables.
-TYPE is a symbol representing the type of the timer. DURATION is
-a number representing the duration of the timer in seconds."
-  (when (timerp work-timer-current-timer)
-    (cancel-timer work-timer-current-timer))
-  (setq work-timer-type type
-        work-timer-start-time (float-time (current-time))
-        work-timer-duration duration
-        work-timer-end-time (float-time (time-add (current-time) duration))
-        work-timer-pauses nil
-        work-timer-pause-time nil
-        work-timer-overrun-p nil
-        work-timer-current-timer (run-with-timer t 1 'work-timer-tick))
-  (work-timer-update-mode-line))
-
-;;;; Mode line
-(defun work-timer-update-mode-line ()
-  "Set `work-timer-mode-line-string' appropriately."
-  (let* ((type-string
-          (capitalize (symbol-name work-timer-type)))
-         (elapsed (work-timer-elapsed-without-pauses
-                   (list :start work-timer-start-time
-                         :end (float-time (current-time))
-                         :pauses work-timer-pauses)))
-         (running-string
-          (concat (when (< elapsed 0) "-")
-                  (format-seconds work-timer-time-format (abs elapsed))))
-         (duration-string
-          (concat (when (< work-timer-duration 0) "-")
-                  (format-seconds work-timer-time-format (abs work-timer-duration))))
-         (mode-line-string
-          (format (propertize "[%s: %s/%s] " 'face 'work-timer-mode-line)
-                  type-string
-                  (if (< work-timer-duration elapsed)
-                      (propertize running-string 'face 'org-mode-line-clock-overrun)
-                    running-string)
-                  duration-string)))
-    (setq work-timer-mode-line-string mode-line-string))
-  (force-mode-line-update t))
-
-;;;; Sound
-(defun work-timer-play-sound ()
-  "Play audio for a timer's end."
-  (when-let ((sound (expand-file-name work-timer-sound))
-             ((file-exists-p sound)))
-    (unless (executable-find "ffplay")
-      (user-error "Cannot play %s without `ffplay'" sound))
-    (call-process-shell-command
-     (format "ffplay -nodisp -autoexit %s >/dev/null 2>&1" sound) nil 0)))
-
-;;;; Log messages
-(defun work-timer-log (format-string &rest objects)
-  "Pass FORMAT-STRING and OBJECTS to `format' and log result to log buffer.
-The log buffer's name is set by `work-timer-log-buffer-name'."
-  (when work-timer-debug
-    (with-current-buffer (get-buffer-create work-timer-log-buffer-name)
-      (goto-char (point-max))
-      (let* ((face '(:weight bold :inherit warning))
-             (timestamp (format-time-string "[%F %T] " (current-time)))
-             (str (concat (propertize timestamp 'face face)
-                          (apply 'format format-string objects)))
-             (propertized-str
-              (propertize str 'face '(:weight bold)))
-             (prefix
-              (propertize "[work-timer] " 'face face)))
-        (message (concat prefix str))
-        (insert propertized-str "\n")))))
 
 ;;; Commands
 ;;;; Timers
