@@ -1,11 +1,11 @@
-#+title: Org-work-timers
+#+title: Work-timers
 
 * Usage
 
 ** Advantage: history
 
 #+begin_comment
-Include annotated image (numbered elements, like a instructional diagram) that shows example data for ~org-work-timer-history~.
+Include annotated image (numbered elements, like a instructional diagram) that shows example data for ~work-timer-history~.
 #+end_comment
 
 * Mimicking ~org-pomodoro~
@@ -36,9 +36,18 @@ Include Mermaid diagram showcasing the interaction between the layers of the pro
 Include my own configuration?
 #+end_comment
 
+** Suggestions
+
+#+begin_comment
+Mention that I users can take the built-in break and work duration functions and…
++ Advise (e.g. override) them.
++ Create their own functions that wrap an existing function
++ Create their own functions from scratch
+#+end_comment
+
 * Other packages
 
-      + [[https://github.com/telotortium/org-pomodoro-third-time][Org-pomodoro-third-time: Adapt org-pomodoro to implement the Third Time system]]
++ [[https://github.com/telotortium/org-pomodoro-third-time][Org-pomodoro-third-time: Adapt org-pomodoro to implement the Third Time system]]
 
 * Roadmap
 
