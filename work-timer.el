@@ -232,7 +232,7 @@ a number representing the duration of the timer in seconds."
     (unless (executable-find "ffplay")
       (user-error "Cannot play %s without `ffplay'" sound))
     (call-process-shell-command
-     (format "ffplay -nodisp -autoexit %s >/dev/null 2>&1" sound) nil 0)))
+     (format "ffplay -nodisp %s >/dev/null 2>&1" sound) nil 0)))
 
 (defun work-timer-tick ()
   "A function invoked by `work-timer-current-timer' each second.
