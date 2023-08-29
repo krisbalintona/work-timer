@@ -51,7 +51,7 @@ The acceptable formats are those taken from `format-seconds'."
   :group 'work-timer
   :type 'string)
 
-(defcustom work-timer-sound "microwave-beep.mp3"
+(defcustom work-timer-sound "simple-notification.mp3"
   "Sound played once a timer's duration finishes.
 Accepted file types are those that `ffplay' can run."
   :group 'work-timer
