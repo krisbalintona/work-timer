@@ -517,11 +517,13 @@ that action."
 Either start a timer or continue an existing one if the current
 timer is a work one."
   (cond
-   ((and (timerp work-timer-current-timer)
-         (not (eq work-timer-type 'work))))
-   ((timerp work-timer-current-timer)
+   ((not (timerp work-timer-current-timer)))
+   ((eq work-timer-type 'work)
     (work-timer-pause-or-continue 'continue)
-    (work-timer-log "(work-timer-org-clock-in) Timer continued"))
+    (work-timer-log "(work-timer-org-clock-in) Break continued"))
+   ((eq work-timer-type 'break)
+    (work-timer-pause-or-continue 'pause)
+    (work-timer-log "(work-timer-org-clock-in) Break paused"))
    (t
     (work-timer-start)
     (work-timer-log "(work-timer-org-clock-in) Timer started"))))
