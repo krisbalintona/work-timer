@@ -57,6 +57,11 @@ Accepted file types are those that `ffplay' can run."
   :group 'work-timer
   :type 'string)
 
+(defcustom work-timer-notifications-p t
+  "Whether notifications are sent on timer's expected end."
+  :group 'work-timer
+  :type 'bool)
+
 ;; TODO 2023-08-15: Make this a sequence of functions run in order until the
 ;; first non-nil value? This way, there can be fallbacks.
 ;; TODO 2023-08-16: Perhaps it'd be best if I allow the user to set this to
@@ -232,7 +237,15 @@ a number representing the duration of the timer in seconds."
     (unless (executable-find "ffplay")
       (user-error "Cannot play %s without `ffplay'" sound))
     (call-process-shell-command
-     (format "ffplay -nodisp %s >/dev/null 2>&1" sound) nil 0)))
+     (format "ffplay -nodisp %s >/dev/null 2>&1" sound) nil 0))
+  (when work-timer-notifications-p
+    (notifications-notify
+     :title "Emacs: work-timer"
+     :body (format "%s timer <b>expected duration of %s reached!</b>"
+                   (capitalize (symbol-name work-timer-type))
+                   ;; duration-string from `work-timer-update-mode-line'
+                   (concat (when (< work-timer-duration 0) "-")
+                           (format-seconds work-timer-time-format (abs work-timer-duration)))))))
 
 (defun work-timer-tick ()
   "A function invoked by `work-timer-current-timer' each second.
