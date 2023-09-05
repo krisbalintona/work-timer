@@ -30,6 +30,8 @@
 ;; Flexible work (and break) timers.
 
 ;;; Code:
+(require 'notifications)
+
 ;;; Customizable variables
 (defgroup work-timer nil
   "Work-timer customization."
