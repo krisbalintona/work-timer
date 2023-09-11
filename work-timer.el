@@ -244,7 +244,7 @@ a number representing the duration of the timer in seconds."
   (when work-timer-notifications-p
     (notifications-notify
      :title "Emacs: work-timer"
-     :body (format "%s timer <b>expected duration of %s reached!</b>"
+     :body (format "%s timer with <b>expected duration</b> of <b>%s reached!</b>"
                    (capitalize (symbol-name work-timer-type))
                    ;; duration-string from `work-timer-update-mode-line'
                    (concat (when (< work-timer-duration 0) "-")
