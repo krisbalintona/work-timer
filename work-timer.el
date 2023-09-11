@@ -126,8 +126,13 @@ function that returns the duration of a break in seconds."
   :group 'work-timer
   :type 'number)
 
-(defcustom work-timer-cycle-finished-hook nil
-  "Hook run before `work-timer-cycle-finish' is called."
+(defcustom work-timer-cycle-finish-hook nil
+  "Hook run after `work-timer-cycle-finish' is called."
+  :type 'hook
+  :group 'work-timer)
+
+(defcustom work-timer-start-or-finish-hook nil
+  "Hook run after `work-timer-start-or-finish' is called."
   :type 'hook
   :group 'work-timer)
 
@@ -432,10 +437,10 @@ that action."
   (interactive)
   (unless (timerp work-timer-current-timer)
     (user-error "[work-timer] No timer running!"))
-  (run-hooks 'work-timer-cycle-finished-hook)
   ;; If the user wants to end a cycle amidst a pause, then end pause first
   (when work-timer-pause-time
     (work-timer-pause-or-continue 'continue))
+  (force-mode-line-update)
   (setq work-timer-history
         (append work-timer-history
                 (list (list :type work-timer-type
@@ -456,7 +461,8 @@ that action."
                                (funcall work-timer-break-duration-function)
                              (error
                               (message "[work-timer] (work-timer-cycle-finish): %s" err))))))
-  (work-timer-log "(work-timer-cycle-finish) Cycle finished"))
+  (work-timer-log "(work-timer-cycle-finish) Cycle finished")
+  (run-hooks 'work-timer-cycle-finish-hook))
 
 ;;;###autoload
 (defun work-timer-end ()
@@ -481,7 +487,8 @@ that action."
   (interactive)
   (if (timerp work-timer-current-timer)
       (work-timer-cycle-finish)
-    (work-timer-start)))
+    (work-timer-start))
+  (run-hooks 'work-timer-start-or-finish-hook))
 
 ;;;; Convenience
 (defun work-timer-report ()
@@ -528,6 +535,19 @@ that action."
   "r" #'work-timer-report)
 
 ;;; Org-clock integration
+(defun work-timer-org-agenda-dwim ()
+  "Behaviors in `org-agenda' buffers when finishing a cycle.
+When finishing a cycle, clock in if the upcoming timer is a work
+one, and out if it's a break one."
+  (message "tk: %s" work-timer-type)
+  (when (equal major-mode 'org-agenda-mode)
+    (pcase work-timer-type
+      ('work
+       (org-agenda-clock-in))
+      ('break
+       (when (marker-buffer org-clock-marker)
+         (org-agenda-clock-out))))))
+
 (defun work-timer-org-clock-in ()
   "Function added to `org-clock-in-hook'.
 Either start a timer or continue an existing one if the current
@@ -559,10 +579,12 @@ Continue a timer if current timer is a break one."
   (cond
    (work-timer-with-org-clock-mode
     (add-hook 'org-clock-in-hook 'work-timer-org-clock-in)
-    (add-hook 'org-clock-out-hook 'work-timer-org-clock-out))
+    (add-hook 'org-clock-out-hook 'work-timer-org-clock-out)
+    (add-hook 'work-timer-start-or-finish-hook 'work-timer-org-agenda-dwim))
    (t
     (remove-hook 'org-clock-in-hook 'work-timer-org-clock-in)
-    (remove-hook 'org-clock-out-hook 'work-timer-org-clock-out))))
+    (remove-hook 'org-clock-out-hook 'work-timer-org-clock-out)
+    (remove-hook 'work-timer-start-or-finish-hook 'work-timer-org-agenda-dwim))))
 
 (provide 'work-timer)
 ;;; work-timer.el ends here
