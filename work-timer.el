@@ -543,6 +543,14 @@ timer is a work one."
     (work-timer-pause-or-continue 'pause)
     (work-timer-log "(work-timer-org-clock-in) Break paused"))))
 
+(defun work-timer-org-clock-out ()
+  "Function added to `org-clock-out-hook'.
+Continue a timer if current timer is a break one."
+  (cond
+   ((eq work-timer-type 'break)
+    (work-timer-pause-or-continue 'continue)
+    (work-timer-log "(work-timer-org-clock-out) Break continued"))))
+
 ;;;###autoload
 (define-minor-mode work-timer-with-org-clock-mode
   "Global minor mode that integrates with work-timer with org-clock."
@@ -550,9 +558,11 @@ timer is a work one."
   :group 'work-timer
   (cond
    (work-timer-with-org-clock-mode
-    (add-hook 'org-clock-in-hook 'work-timer-org-clock-in))
+    (add-hook 'org-clock-in-hook 'work-timer-org-clock-in)
+    (add-hook 'org-clock-out-hook 'work-timer-org-clock-out))
    (t
-    (remove-hook 'org-clock-in-hook 'work-timer-org-clock-in))))
+    (remove-hook 'org-clock-in-hook 'work-timer-org-clock-in)
+    (remove-hook 'org-clock-out-hook 'work-timer-org-clock-out))))
 
 (provide 'work-timer)
 ;;; work-timer.el ends here
