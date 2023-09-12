@@ -539,7 +539,6 @@ that action."
   "Behaviors in `org-agenda' buffers when finishing a cycle.
 When finishing a cycle, clock in if the upcoming timer is a work
 one, and out if it's a break one."
-  (message "tk: %s" work-timer-type)
   (when (equal major-mode 'org-agenda-mode)
     (pcase work-timer-type
       ('work
@@ -573,7 +572,7 @@ Continue a timer if current timer is a break one."
 
 ;;;###autoload
 (define-minor-mode work-timer-with-org-clock-mode
-  "Global minor mode that integrates with work-timer with org-clock."
+  "Global minor mode that integrates with work-timer with `org-agenda'."
   :global t
   :group 'work-timer
   (cond
