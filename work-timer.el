@@ -372,9 +372,22 @@ work timer. This fraction is determined by the value of
 
 Also add total surplus time (which can be negative or positive)."
   (let* ((work-period (car (last work-timer-history)))
-         (elapsed-total (- (plist-get work-period :end)
-                           (plist-get work-period :start)))
-         (duration (* elapsed-total work-timer-fractional-break-duration-fraction)))
+         (work-elapsed (- (plist-get work-period :end)
+                          (plist-get work-period :start)))
+         (break-period (car (last (seq-filter
+                                   (lambda (entry)
+                                     (equal 'break (plist-get entry :type)))
+                                   work-timer-history))))
+         (break-elapsed (when break-period
+                          (- (plist-get break-period :end)
+                             (plist-get break-period :start))))
+         (break-surplus (when break-period
+                          (read-number "Carry over how many seconds: "
+                                       (round
+                                        (- (plist-get break-period :expected-duration) break-elapsed)))))
+         (duration (+ (or break-surplus 0)
+                      (* work-elapsed work-timer-fractional-break-duration-fraction))))
+    (work-timer-log "(work-timer-break-duration-fractional) Surplus added: %s" break-surplus)
     (work-timer-log "(work-timer-break-duration-fractional) Break duration: %s" duration)
     duration))
 
