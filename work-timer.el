@@ -381,10 +381,10 @@ Also add total surplus time (which can be negative or positive)."
          (break-elapsed (when break-period
                           (- (plist-get break-period :end)
                              (plist-get break-period :start))))
-         (break-surplus (when break-period
-                          (read-number "Carry over how many seconds: "
-                                       (round
-                                        (- (plist-get break-period :expected-duration) break-elapsed)))))
+         (break-surplus (read-number "Carry over how many seconds: "
+                                     (round (if break-period
+                                                (- (plist-get break-period :expected-duration) break-elapsed)
+                                              0))))
          (duration (+ (or break-surplus 0)
                       (* work-elapsed work-timer-fractional-break-duration-fraction))))
     (work-timer-log "(work-timer-break-duration-fractional) Surplus added: %s" break-surplus)
