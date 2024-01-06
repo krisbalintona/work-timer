@@ -504,6 +504,40 @@ that action."
   (run-hooks 'work-timer-start-or-finish-hook))
 
 ;;;; Convenience
+(defun work-timer-modify ()
+  "Modify the current timer's parameters live."
+  (interactive)
+  (let* ((ch (save-window-excursion
+               (save-excursion
+                 (with-output-to-temp-buffer "*Work Timer*"
+                   (princ (format-message "Select a variable to modify:
+
+d      Expected duration
+
+r      Running time.")))
+                 (fit-window-to-buffer (get-buffer-window "*Work Timer*"))
+                 (let (char-pressed)
+                   (while (or (null char-pressed)
+                              (and (not (memq char-pressed
+                                              '(?q ?d ?r)))
+                                   (or (ding) t)))
+                     (setq char-pressed
+                           (read-char-exclusive "[dr]? "
+                                                nil 45)))
+                   (and (not (memq char-pressed '(?q))) char-pressed))))))
+    (cond
+     ((memq ch '(?d ?D))
+      (let* ((dur (* 60 (read-number "Change expected duration to (in minutes): " work-timer-default-work-duration)))
+             (diff (- work-timer-duration dur)))
+        (setq work-timer-duration dur
+              work-timer-end-time (- work-timer-end-time diff))))
+     ((memq ch '(?r ?R))
+      (let* ((offset (condition-case nil
+                         (eval (read (read-from-minibuffer
+                                      "Offset the current runing time by (in seconds; positive increases, negative decreases; can also provide a sexp): ")))
+                       (error (message "Invalid input. Must provide a number or an elisp that evaluates to a number.")))))
+        (setq work-timer-start-time (- work-timer-start-time offset)))))))
+
 (defun work-timer-report ()
   "Print the statistics of this series of timers."
   (interactive)
@@ -545,7 +579,8 @@ that action."
   "f" #'work-timer-cycle-finish
   "e" #'work-timer-end
   "w" #'work-timer-start-or-finish
-  "r" #'work-timer-report)
+  "r" #'work-timer-report
+  "m" #'work-timer-modify)
 
 ;;; Org-clock integration
 (defun work-timer-org-agenda-dwim ()
