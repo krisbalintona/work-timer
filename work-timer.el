@@ -554,16 +554,16 @@ r      Running time.")))
              (plist-get (first timer-entries) :start)))
          (work-count (length
                       (work-timer-process-history 'identity
-                                                  (lambda (elt) (eq (plist-get elt :type) 'work)))))
+                                                  (lambda (entry) (eq (plist-get entry :type) 'work)))))
          (work-sum (apply #'+
                           (work-timer-process-history 'work-timer-elapsed-without-pauses
-                                                      (eq (plist-get entry :type) 'work))))
+                                                      (lambda (entry) (eq (plist-get entry :type) 'work)))))
          (break-count (length
                        (work-timer-process-history 'identity
-                                                   (lambda (elt) (eq (plist-get elt :type) 'break)))))
+                                                   (lambda (entry) (eq (plist-get entry :type) 'break)))))
          (break-sum (apply #'+
                            (work-timer-process-history 'work-timer-elapsed-without-pauses
-                                                       (eq (plist-get entry :type) 'break)))))
+                                                       (lambda (entry) (eq (plist-get entry :type) 'break))))))
     (message "In the last %s, you had %s work sessions and %s breaks, and worked for %s and took breaks for %s."
              (format-seconds "%.2h hours and %.2m minutes" elapsed-total)
              work-count
