@@ -454,28 +454,28 @@ that action."
   (when work-timer-pause-time
     (work-timer-pause-or-continue 'continue))
   (force-mode-line-update)
-  (setq work-timer-history
-        (append work-timer-history
-                (list (list :type work-timer-type
-                            :expected-duration work-timer-duration
-                            :start work-timer-start-time
-                            :end (float-time (current-time))
-                            :pauses work-timer-pauses))))
-  (pcase work-timer-type
-    ('break
-     (work-timer-set-timer 'work
-                           (condition-case err
-                               (funcall work-timer-work-duration-function)
-                             (error
-                              (message "[work-timer] (work-timer-cycle-finish): %s" err)))))
-    (t
-     (work-timer-set-timer 'break
-                           (condition-case err
-                               (funcall work-timer-break-duration-function)
-                             (error
-                              (message "[work-timer] (work-timer-cycle-finish): %s" err))))))
-  (work-timer-log "(work-timer-cycle-finish) Cycle finished")
-  (run-hooks 'work-timer-cycle-finish-hook))
+  (let ((new-history (append work-timer-history
+                             (list (list :type work-timer-type
+                                         :expected-duration work-timer-duration
+                                         :start work-timer-start-time
+                                         :end (float-time (current-time))
+                                         :pauses work-timer-pauses)))))
+    (pcase work-timer-type
+      ('break
+       (work-timer-set-timer 'work
+                             (condition-case err
+                                 (funcall work-timer-work-duration-function)
+                               (error
+                                (message "[work-timer] (work-timer-cycle-finish): %s" err)))))
+      (t
+       (work-timer-set-timer 'break
+                             (condition-case err
+                                 (funcall work-timer-break-duration-function)
+                               (error
+                                (message "[work-timer] (work-timer-cycle-finish): %s" err))))))
+    (setq work-timer-history new-history)
+    (work-timer-log "(work-timer-cycle-finish) Cycle finished")
+    (run-hooks 'work-timer-cycle-finish-hook)))
 
 ;;;###autoload
 (defun work-timer-end ()
