@@ -465,14 +465,12 @@ that action."
        (work-timer-set-timer 'work
                              (condition-case err
                                  (funcall work-timer-work-duration-function)
-                               (error
-                                (message "[work-timer] (work-timer-cycle-finish): %s" err)))))
+                               (error "[work-timer] (work-timer-cycle-finish): %s"))))
       (t
        (work-timer-set-timer 'break
                              (condition-case err
                                  (funcall work-timer-break-duration-function)
-                               (error
-                                (message "[work-timer] (work-timer-cycle-finish): %s" err))))))
+                               (error "[work-timer] (work-timer-cycle-finish): %s")))))
     (setq work-timer-history new-history)
     (work-timer-log "(work-timer-cycle-finish) Cycle finished")
     (run-hooks 'work-timer-cycle-finish-hook)))
