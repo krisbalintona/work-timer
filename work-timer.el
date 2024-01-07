@@ -543,15 +543,15 @@ r      Running time.")))
   (interactive)
   (unless (timerp work-timer-current-timer)
     (user-error "[work-timer] No timer running!"))
-  (let* ((timer-entries
+  (let* ((work-timer-history
           (append work-timer-history
                   (list (list :type work-timer-type
                               :start work-timer-start-time
                               :end (float-time (current-time))
                               :pauses work-timer-pauses))))
          (elapsed-total
-          (- (plist-get (car (last timer-entries)) :end)
-             (plist-get (first timer-entries) :start)))
+          (- (plist-get (car (last work-timer-history)) :end)
+             (plist-get (first work-timer-history) :start)))
          (work-count (length
                       (work-timer-process-history 'identity
                                                   (lambda (entry) (eq (plist-get entry :type) 'work)))))
