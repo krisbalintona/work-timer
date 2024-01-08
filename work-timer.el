@@ -329,6 +329,14 @@ decreases if you take a longer break than expected."
           (if last-break (work-timer-overrun last-break) 0)))
     (+ work-surplus (- break-surplus))))
 
+(defun work-timer-surplus-prompt (&optional default)
+  "Prompt user for a surplus duration in seconds.
+
+A surplus duration denotes how much time should be carried over
+onto the next timer. DEFAULT will be the default prompted
+duration."
+  (read-number "Carry over how many seconds: " (round (or default 0))))
+
 ;;;; Duration functions
 ;;;;; Basic
 (defun work-timer-work-duration-basic ()
@@ -380,10 +388,9 @@ Also add total surplus time (which can be negative or positive)."
          (break-elapsed (when break-period
                           (- (plist-get break-period :end)
                              (plist-get break-period :start))))
-         (break-surplus (read-number "Carry over how many seconds: "
-                                     (round (if break-period
-                                                (- (plist-get break-period :expected-duration) break-elapsed)
-                                              0))))
+         (break-surplus (work-timer-surplus-prompt
+                         (when break-period
+                           (- (plist-get break-period :expected-duration) break-elapsed))))
          (duration (+ (or break-surplus 0)
                       (* work-elapsed work-timer-fractional-break-duration-fraction))))
     (work-timer-log "(work-timer-break-duration-fractional) Surplus added: %s" break-surplus)
