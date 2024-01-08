@@ -345,7 +345,21 @@ duration."
 
 (defun work-timer-break-duration-basic ()
   "Return `work-timer-default-break-duration' in seconds."
-  (* 60 work-timer-default-break-duration))
+  (let* ((last-break (car (last (seq-filter
+                                 (lambda (entry)
+                                   (equal 'break (plist-get entry :type)))
+                                 work-timer-history))))
+         (last-break-elapsed (when last-break
+                               (- (plist-get last-break :end)
+                                  (plist-get last-break :start))))
+         (surplus (work-timer-surplus-prompt
+                   (when last-break
+                     (- (plist-get last-break :expected-duration) last-break-elapsed))))
+         (duration (+ (or surplus 0)
+                      (* 60 work-timer-default-break-duration))))
+    (work-timer-log "(work-timer-break-duration-basic) Surplus added: %s" surplus)
+    (work-timer-log "(work-timer-break-duration-basic) Break duration: %s" duration)
+    duration))
 
 ;;;;; Pomodoro
 (defun work-timer-work-duration-pomodoro ()
@@ -354,14 +368,27 @@ duration."
 
 (defun work-timer-break-duration-pomodoro ()
   "Break duration in seconds according to the Pomodoro method."
-  (let* ((long-p (zerop (mod
+  (let* ((last-break (car (last (seq-filter
+                                 (lambda (entry)
+                                   (equal 'break (plist-get entry :type)))
+                                 work-timer-history))))
+         (last-break-elapsed (when last-break
+                               (- (plist-get last-break :end)
+                                  (plist-get last-break :start))))
+         (surplus (work-timer-surplus-prompt
+                   (when last-break
+                     (- (plist-get last-break :expected-duration) last-break-elapsed))))
+
+         (long-p (zerop (mod
                          (length
                           (work-timer-process-history 'identity
                                                       (lambda (entry) (eq (plist-get entry :type) 'work))))
                          4)))
-         (duration (if long-p
-                       (* 60 work-timer-pomodoro-break-duration-long)
-                     (* 60 work-timer-pomodoro-break-duration-short))))
+         (duration (+ (or surplus 0)
+                      (if long-p
+                          (* 60 work-timer-pomodoro-break-duration-long)
+                        (* 60 work-timer-pomodoro-break-duration-short)))))
+    (work-timer-log "(work-timer-break-duration-pomodoro) Surplus added: %s" surplus)
     (work-timer-log "(work-timer-break-duration-pomodoro) Break duration: %s" duration)
     duration))
 
@@ -374,26 +401,24 @@ seconds."
 
 (defun work-timer-break-duration-fractional ()
   "\"Fractional\" break duration in seconds.
-Return, in seconds, a fraction of the time worked in the preview
+Return, in seconds, a fraction of the time worked in the previous
 work timer. This fraction is determined by the value of
-`work-timer-fractional-break-duration-fraction'.
-
-Also add total surplus time (which can be negative or positive)."
+`work-timer-fractional-break-duration-fraction'."
   (let* ((work-elapsed (- (float-time (current-time))
                           work-timer-start-time))
-         (break-period (car (last (seq-filter
-                                   (lambda (entry)
-                                     (equal 'break (plist-get entry :type)))
-                                   work-timer-history))))
-         (break-elapsed (when break-period
-                          (- (plist-get break-period :end)
-                             (plist-get break-period :start))))
-         (break-surplus (work-timer-surplus-prompt
-                         (when break-period
-                           (- (plist-get break-period :expected-duration) break-elapsed))))
-         (duration (+ (or break-surplus 0)
+         (last-break (car (last (seq-filter
+                                 (lambda (entry)
+                                   (equal 'break (plist-get entry :type)))
+                                 work-timer-history))))
+         (last-break-elapsed (when last-break
+                               (- (plist-get last-break :end)
+                                  (plist-get last-break :start))))
+         (surplus (work-timer-surplus-prompt
+                   (when last-break
+                     (- (plist-get last-break :expected-duration) last-break-elapsed))))
+         (duration (+ (or surplus 0)
                       (* work-elapsed work-timer-fractional-break-duration-fraction))))
-    (work-timer-log "(work-timer-break-duration-fractional) Surplus added: %s" break-surplus)
+    (work-timer-log "(work-timer-break-duration-fractional) Surplus added: %s" surplus)
     (work-timer-log "(work-timer-break-duration-fractional) Break duration: %s" duration)
     duration))
 
