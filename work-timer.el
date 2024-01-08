@@ -471,7 +471,11 @@ that action."
                         ('break (funcall work-timer-work-duration-function))
                         ('work (funcall work-timer-break-duration-function)))
                     (error "[work-timer] (work-timer-cycle-finish): %s"))))
-    (work-timer-set-timer work-timer-type duration)
+    (work-timer-set-timer
+     (pcase work-timer-type
+       ('break 'work)
+       ('work 'break))
+     duration)
     (setq work-timer-history new-history)
     (work-timer-log "(work-timer-cycle-finish) Cycle finished")
     (run-hooks 'work-timer-cycle-finish-hook)))
