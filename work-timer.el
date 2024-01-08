@@ -126,6 +126,11 @@ function that returns the duration of a break in seconds."
   :group 'work-timer
   :type 'number)
 
+(defcustom work-timer-break-surplus-prompt-p t
+  "Whether to prompt for a surplus duration for break timers."
+  :type 'boolean
+  :group 'work-timer)
+
 (defcustom work-timer-cycle-finish-hook nil
   "Hook run after `work-timer-cycle-finish' is called."
   :type 'hook
@@ -331,11 +336,12 @@ decreases if you take a longer break than expected."
 
 (defun work-timer-surplus-prompt (&optional default)
   "Prompt user for a surplus duration in seconds.
-
 A surplus duration denotes how much time should be carried over
 onto the next timer. DEFAULT will be the default prompted
 duration."
-  (read-number "Carry over how many seconds: " (round (or default 0))))
+  (if work-timer-break-surplus-prompt-p
+      (read-number "Carry over how many seconds: " (round (or default 0)))
+    0))
 
 ;;;; Duration functions
 ;;;;; Basic
