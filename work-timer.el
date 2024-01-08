@@ -371,9 +371,8 @@ work timer. This fraction is determined by the value of
 `work-timer-fractional-break-duration-fraction'.
 
 Also add total surplus time (which can be negative or positive)."
-  (let* ((work-period (car (last work-timer-history)))
-         (work-elapsed (- (plist-get work-period :end)
-                          (plist-get work-period :start)))
+  (let* ((work-elapsed (- (float-time (current-time))
+                          work-timer-start-time))
          (break-period (car (last (seq-filter
                                    (lambda (entry)
                                      (equal 'break (plist-get entry :type)))
@@ -459,18 +458,13 @@ that action."
                                          :expected-duration work-timer-duration
                                          :start work-timer-start-time
                                          :end (float-time (current-time))
-                                         :pauses work-timer-pauses)))))
-    (pcase work-timer-type
-      ('break
-       (work-timer-set-timer 'work
-                             (condition-case err
-                                 (funcall work-timer-work-duration-function)
-                               (error "[work-timer] (work-timer-cycle-finish): %s"))))
-      (t
-       (work-timer-set-timer 'break
-                             (condition-case err
-                                 (funcall work-timer-break-duration-function)
-                               (error "[work-timer] (work-timer-cycle-finish): %s")))))
+                                         :pauses work-timer-pauses))))
+        (duration (condition-case err
+                      (pcase work-timer-type
+                        ('break (funcall work-timer-work-duration-function))
+                        ('work (funcall work-timer-break-duration-function)))
+                    (error "[work-timer] (work-timer-cycle-finish): %s"))))
+    (work-timer-set-timer work-timer-type duration)
     (setq work-timer-history new-history)
     (work-timer-log "(work-timer-cycle-finish) Cycle finished")
     (run-hooks 'work-timer-cycle-finish-hook)))
