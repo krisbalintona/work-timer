@@ -5,7 +5,7 @@
 ;; Author: Kristoffer Balintona <krisbalintona@gmail.com>
 ;; Maintainer: Kristoffer Balintona <krisbalintona@gmail.com>
 ;; Created: 2023
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "29.1"))
 ;; Homepage: https://github.com/krisbalintona/org-work-timer
 ;; Keywords: convenience
@@ -27,7 +27,7 @@
 
 ;;; Commentary:
 
-;; Flexible work (and break) timers.
+;; Flexibly-defined work (and break) timer durations.
 
 ;;; Code:
 (require 'notifications)
