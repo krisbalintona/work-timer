@@ -6,7 +6,7 @@
 ;; Maintainer: Kristoffer Balintona <krisbalintona@gmail.com>
 ;; Created: 2023
 ;; Version: 0.2
-;; Package-Requires: ((emacs "29.1"))
+;; Package-Requires: ((emacs "25.1") (compat "29.1.3.0"))
 ;; Homepage: https://github.com/krisbalintona/org-work-timer
 ;; Keywords: convenience
 
