@@ -621,7 +621,8 @@ r      Running time.")))
   "Behaviors in `org-agenda' buffers when finishing a cycle.
 When finishing a cycle, clock in if the upcoming timer is a work
 one, and out if it's a break one."
-  (when (equal major-mode 'org-agenda-mode)
+  (when (and (equal major-mode 'org-agenda-mode)
+             (org-get-at-bol 'org-marker)) ; On an org-agenda item
     (pcase work-timer-type
       ('work
        (org-agenda-clock-in))
