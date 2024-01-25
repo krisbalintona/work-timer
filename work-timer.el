@@ -206,14 +206,18 @@ The log buffer's name is set by `work-timer-log-buffer-name'."
         (insert propertized-str "\n")))))
 
 ;;;; Timers
-(defun work-timer-set-timer (type duration)
+(defun work-timer-set-timer (type duration &optional start)
   "Create a timer and set the appropriate variables.
 TYPE is a symbol representing the type of the timer. DURATION is
-a number representing the duration of the timer in seconds."
+a number representing the duration of the timer in seconds.
+
+Additionally, the optional argument START can be provided to set
+the start time of the timer. Should be in the format returned by
+`float-time', i.e., a float number of seconds since the epoch."
   (when (timerp work-timer-current-timer)
     (cancel-timer work-timer-current-timer))
   (setq work-timer-type type
-        work-timer-start-time (float-time (current-time))
+        work-timer-start-time (or start (float-time (current-time)))
         work-timer-duration duration
         work-timer-end-time (float-time (time-add (current-time) duration))
         work-timer-pauses nil
@@ -435,10 +439,21 @@ work timer. This fraction is determined by the value of
 ;;; Commands
 ;;;; Timers
 ;;;###autoload
-(defun work-timer-start ()
-  "Start a work timer."
+(defun work-timer-start (&optional start duration type)
+  "Start a work timer.
+Optionally provide START which is a custom start time. See the
+docstring of `work-timer-set-timer' for the acceptable format of
+this argument. If none is provided, the current time is used.
+
+You can also provide the optional argument DURATION for the
+duration of the timer in seconds. If nothing is provided, then
+the function defined in `work-timer-work-duration-function'.
+
+TYPE overrides the default timer type of `work'."
   (interactive)
-  (work-timer-set-timer 'work (funcall work-timer-work-duration-function))
+  (work-timer-set-timer (or type 'work)
+                        (or duration (funcall work-timer-work-duration-function))
+                        start)
   (unless global-mode-string (setq global-mode-string '("")))
   (unless (memq 'work-timer-mode-line-string global-mode-string)
     (setq global-mode-string
@@ -538,7 +553,7 @@ that action."
   (interactive)
   (if (timerp work-timer-current-timer)
       (work-timer-cycle-finish)
-    (work-timer-start))
+    (work-timer-start work-timer-start-time work-timer-duration work-timer-type))
   (run-hooks 'work-timer-start-or-finish-hook))
 
 ;;;; Convenience
