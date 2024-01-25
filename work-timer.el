@@ -142,6 +142,10 @@ function that returns the duration of a break in seconds."
   :group 'work-timer)
 
 ;;; Faces
+;; TODO 2024-01-24: Consider, for the instances in which this face is used,
+;; calling a variable instead. That variable can either have this face as a
+;; value or a function which determines that face. This way, I can build in an
+;; accessible entry point for my `kb/work-timer-set-faces'
 (defface work-timer-mode-line
   '((t (:foreground "DarkOrange" :inherit bold)))
   "Face used for timer display in mode line."
