@@ -531,19 +531,22 @@ that action."
     (run-hooks 'work-timer-cycle-finish-hook)))
 
 ;;;###autoload
-(defun work-timer-end ()
-  "End the current timer."
-  (interactive)
+(defun work-timer-end (arg)
+  "End the current timer and clear history.
+If called with ARG, just end the current timer without clearing
+history."
+  (interactive "^P")
   (when (timerp work-timer-current-timer)
     (cancel-timer work-timer-current-timer))
   (setq work-timer-current-timer nil
         work-timer-type nil
         work-timer-start-time nil
+        work-timer-duration nil
         work-timer-end-time nil
         work-timer-pause-time nil
         work-timer-pauses nil
-        work-timer-history nil
         global-mode-string (remove 'work-timer-mode-line-string global-mode-string))
+  (unless arg (setq work-timer-history nil))
   (force-mode-line-update t)
   (work-timer-log "(work-timer-end) Timer ended"))
 
