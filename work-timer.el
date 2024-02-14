@@ -634,6 +634,7 @@ r      Running time.")))
              (format-seconds "%.2h:%.2m:%.2s" break-sum))))
 
 ;;;; Keymap
+;;;###autoload (autoload 'work-timer-prefix-map "work-timer" nil t 'keymap)
 (defvar-keymap work-timer-prefix-map
   :doc "Prefix map for `work-timer' commands."
   "s" #'work-timer-start
