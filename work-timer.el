@@ -626,12 +626,13 @@ r      Running time.")))
          (break-sum (apply #'+
                            (work-timer-process-history 'work-timer-elapsed-without-pauses
                                                        (lambda (entry) (eq (plist-get entry :type) 'break))))))
-    (message "In the last %s, you had %s work sessions and %s breaks, and worked for %s and took breaks for %s."
+    (message "In the last %s, you had %s work sessions and %s breaks, and worked for %s and took breaks for %s. Your work efficiency is %s (not including pauses)."
              (format-seconds "%.2h hours and %.2m minutes" elapsed-total)
              work-count
              break-count
              (format-seconds "%.2h:%.2m:%.2s" work-sum)
-             (format-seconds "%.2h:%.2m:%.2s" break-sum))))
+             (format-seconds "%.2h:%.2m:%.2s" break-sum)
+             (format "%f" (/ (- work-sum break-sum) work-sum)))))
 
 ;;;; Keymap
 ;;;###autoload (autoload 'work-timer-prefix-map "work-timer" nil t 'keymap)
