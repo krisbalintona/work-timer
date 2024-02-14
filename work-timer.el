@@ -506,9 +506,6 @@ that action."
   (interactive)
   (unless (timerp work-timer-current-timer)
     (user-error "[work-timer] No timer running!"))
-  ;; If the user wants to end a cycle amidst a pause, then end pause first
-  (when work-timer-pause-time
-    (work-timer-pause-or-continue 'continue))
   (force-mode-line-update)
   (let ((new-history (append work-timer-history
                              (list (list :type work-timer-type
@@ -554,6 +551,15 @@ history."
 (defun work-timer-start-or-finish ()
   "Conditionally start a timer or finish a cycle."
   (interactive)
+  ;; If the user wants to end a cycle amidst a pause, then end pause first. We
+  ;; do this here rather than in `work-timer-cycle-finish' because this prevents
+  ;; `work-timer-start' from ever being called in the middle of a pause. This
+  ;; can occur when there is no timer but we are in "the middle of a pause,"
+  ;; such as when the timer is accidentally cancelled or when the user is using
+  ;; variables restored from a previous Emacs session via `savehist' and wants
+  ;; to continue where they left off
+  (when work-timer-pause-time
+    (work-timer-pause-or-continue 'continue))
   (if (timerp work-timer-current-timer)
       (work-timer-cycle-finish)
     (work-timer-start work-timer-start-time work-timer-duration work-timer-type))
