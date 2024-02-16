@@ -590,15 +590,33 @@ r      Running time.")))
     (cond
      ((memq ch '(?d ?D))
       (let* ((dur (* 60 (read-number "Change expected duration to (in minutes): " work-timer-default-work-duration)))
-             (diff (- work-timer-duration dur)))
+             (diff (- work-timer-duration dur))
+             (new-dur (- work-timer-end-time diff)))
         (setq work-timer-duration dur
-              work-timer-end-time (- work-timer-end-time diff))))
+              work-timer-end-time new-dur)
+        (if (< (work-timer-elapsed-without-pauses
+                (list :start work-timer-start-time
+                      :end (float-time (current-time))
+                      :pauses work-timer-pauses))
+               new-dur)
+            ;; Ensure `work-timer-overrun-p', which tracks whether the sound
+            ;; already rang, is not non-nil if the new duration is after the
+            ;; elapsed time
+            (setq work-timer-overrun-p nil)
+          (setq work-timer-overrun-p t))))
      ((memq ch '(?r ?R))
       (let* ((offset (condition-case nil
                          (eval (read (read-from-minibuffer
                                       "Offset the current runing time by (in seconds; positive increases, negative decreases; can also provide a sexp): ")))
-                       (error (message "Invalid input. Must provide a number or an elisp that evaluates to a number.")))))
-        (setq work-timer-start-time (- work-timer-start-time offset)))))))
+                       (error (message "Invalid input. Must provide a number or an elisp that evaluates to a number."))))
+             (new-time (- work-timer-start-time offset)))
+        (setq work-timer-start-time new-time)
+        (if (< new-time work-timer-end-time)
+            ;; Ensure `work-timer-overrun-p', which tracks whether the sound
+            ;; already rang, is not non-nil if the modified time is before the
+            ;; end time
+            (setq work-timer-overrun-p nil)
+          (setq work-timer-overrun-p t)))))))
 
 (defun work-timer-report ()
   "Print the statistics of this series of timers."
