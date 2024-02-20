@@ -517,7 +517,8 @@ that action."
                       (pcase work-timer-type
                         ('break (funcall work-timer-work-duration-function))
                         ('work (funcall work-timer-break-duration-function)))
-                    (error "[work-timer] (work-timer-cycle-finish): %s"))))
+                    (error
+                     "[work-timer] (work-timer-cycle-finish): %s" (error-message-string err)))))
     (work-timer-set-timer
      (pcase work-timer-type
        ('break 'work)
@@ -608,7 +609,8 @@ r      Running time.")))
       (let* ((offset (condition-case nil
                          (eval (read (read-from-minibuffer
                                       "Offset the current runing time by (in seconds; positive increases, negative decreases; can also provide a sexp): ")))
-                       (error (message "Invalid input. Must provide a number or an elisp that evaluates to a number."))))
+                       (error
+                        (message "Invalid input. Must provide a number or an elisp that evaluates to a number."))))
              (new-time (- work-timer-start-time offset)))
         (setq work-timer-start-time new-time)
         (if (< new-time work-timer-end-time)
