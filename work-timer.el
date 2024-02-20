@@ -450,7 +450,10 @@ duration of the timer in seconds. If nothing is provided, then
 the function defined in `work-timer-work-duration-function'.
 
 TYPE overrides the default timer type of `work'."
-  (interactive)
+  (interactive (list nil
+                     (eval (read (read-from-minibuffer
+                                  "Set timer's duration (in seconds; can also provide a sexp): ")))
+                     nil))
   (work-timer-set-timer (or type 'work)
                         (or duration (funcall work-timer-work-duration-function))
                         start)
@@ -501,9 +504,12 @@ that action."
     (when pauses-modified-p work-timer-pauses)))
 
 ;;;###autoload
-(defun work-timer-cycle-finish ()
-  "Finish the current timer cycle."
-  (interactive)
+(defun work-timer-cycle-finish (&optional manual)
+  "Finish the current timer cycle.
+If MANUAL is provided, via argument or `prefix-arg', then
+manually prompt for a duration in seconds. Prompt also accepts
+sexps to calculate the value."
+  (interactive "^P")
   (unless (timerp work-timer-current-timer)
     (user-error "[work-timer] No timer running!"))
   (force-mode-line-update)
@@ -514,9 +520,12 @@ that action."
                                          :end (float-time (current-time))
                                          :pauses work-timer-pauses))))
         (duration (condition-case err
-                      (pcase work-timer-type
-                        ('break (funcall work-timer-work-duration-function))
-                        ('work (funcall work-timer-break-duration-function)))
+                      (if manual
+                          (eval (read (read-from-minibuffer
+                                       "Set new timer's duration (in seconds; can also provide a sexp): ")))
+                        (pcase work-timer-type
+                          ('break (funcall work-timer-work-duration-function))
+                          ('work (funcall work-timer-break-duration-function))))
                     (error
                      "[work-timer] (work-timer-cycle-finish): %s" (error-message-string err)))))
     (work-timer-set-timer
@@ -608,7 +617,7 @@ r      Running time.")))
      ((memq ch '(?r ?R))
       (let* ((offset (condition-case nil
                          (eval (read (read-from-minibuffer
-                                      "Offset the current runing time by (in seconds; positive increases, negative decreases; can also provide a sexp): ")))
+                                      "Offset the current running time by (in seconds; positive increases, negative decreases; can also provide a sexp): ")))
                        (error
                         (message "Invalid input. Must provide a number or an elisp that evaluates to a number."))))
              (new-time (- work-timer-start-time offset)))
