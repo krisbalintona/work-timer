@@ -36,15 +36,19 @@
 (defgroup work-timer nil
   "Work-timer customization."
   :tag "Org work timer"
-  :group 'org-progress)
+  :group 'work-timer)
 
 (defcustom work-timer-debug nil
   "Whether log messages should be printed.
 Messages will be printed to the \"*Messages*\" buffer and
-`work-timer-log-buffer-name' buffer.")
+`work-timer-log-buffer-name' buffer."
+  :group 'work-timer
+  :type 'boolean)
 
 (defcustom work-timer-log-buffer-name "*Work-timer Logs*"
-  "Name of log buffer for work-timer.")
+  "Name of log buffer for work-timer."
+  :group 'work-timer
+  :type 'string)
 
 (defcustom work-timer-time-format "%h:%.2m"
   "Defines the format of the time representation in the modeline.
@@ -58,12 +62,12 @@ The acceptable formats are those taken from `format-seconds'."
   "Sound played once a timer's duration finishes.
 Accepted file types are those that `ffplay' can run."
   :group 'work-timer
-  :type 'string)
+  :type 'file)
 
 (defcustom work-timer-notifications-p t
   "Whether notifications are sent on timer's expected end."
   :group 'work-timer
-  :type 'bool)
+  :type 'boolean)
 
 ;; TODO 2023-08-15: Make this a sequence of functions run in order until the
 ;; first non-nil value? This way, there can be fallbacks.
@@ -78,7 +82,7 @@ Possible values are `work-timer-work-duration-basic',
 `work-timer-work-duration-pomodoro'and a user-defined
 function that returns the duration of a break in seconds."
   :group 'work-timer
-  :type 'symbol)
+  :type 'function)
 
 (defcustom work-timer-break-duration-function
   'work-timer-break-duration-basic
@@ -89,7 +93,7 @@ Possible values are `work-timer-break-duration-basic',
 `work-timer-break-duration-pomodoro' and a user-defined
 function that returns the duration of a break in seconds."
   :group 'work-timer
-  :type 'symbol)
+  :type 'function)
 
 (defcustom work-timer-default-work-duration 30
   "Default number of minutes for work timers."
@@ -133,13 +137,13 @@ function that returns the duration of a break in seconds."
 
 (defcustom work-timer-cycle-finish-hook nil
   "Hook run after `work-timer-cycle-finish' is called."
-  :type 'hook
-  :group 'work-timer)
+  :group 'work-timer
+  :type 'hook)
 
 (defcustom work-timer-start-or-finish-hook nil
   "Hook run after `work-timer-start-or-finish' is called."
-  :type 'hook
-  :group 'work-timer)
+  :group 'work-timer
+  :type 'hook)
 
 ;;; Faces
 ;; TODO 2024-01-24: Consider, for the instances in which this face is used,
