@@ -188,7 +188,7 @@ function that returns the duration of a break in seconds."
 
 ;;; Functions
 ;;;; Log messages
-(defun work-timer-log (format-string &rest objects)
+(defun work-timer--log (format-string &rest objects)
   "Pass FORMAT-STRING and OBJECTS to `format' and log result to log buffer.
 The log buffer's name is set by `work-timer-log-buffer-name'."
   (when work-timer-debug
@@ -206,7 +206,7 @@ The log buffer's name is set by `work-timer-log-buffer-name'."
         (insert propertized-str "\n")))))
 
 ;;;; Timers
-(defun work-timer-set-timer (type duration &optional start)
+(defun work-timer--set-timer (type duration &optional start)
   "Create a timer and set the appropriate variables.
 TYPE is a symbol representing the type of the timer. DURATION is
 a number representing the duration of the timer in seconds.
@@ -227,7 +227,7 @@ the start time of the timer. Should be in the format returned by
   (work-timer-update-mode-line))
 
 ;;;; Mode line
-(defun work-timer-update-mode-line ()
+(defun work-timer--update-mode-line ()
   "Set `work-timer-mode-line-string' appropriately."
   (let* ((type-string
           (capitalize (symbol-name work-timer-type)))
@@ -251,7 +251,7 @@ the start time of the timer. Should be in the format returned by
     (setq work-timer-mode-line-string mode-line-string))
   (force-mode-line-update t))
 
-(defun work-timer-play-sound ()
+(defun work-timer--play-sound ()
   "Play audio for a timer's end."
   (when-let ((sound work-timer-sound)
              ((file-exists-p sound)))
@@ -264,15 +264,15 @@ the start time of the timer. Should be in the format returned by
      :title "Emacs: work-timer"
      :body (format "%s timer with <b>expected duration</b> of <b>%s reached!</b>"
                    (capitalize (symbol-name work-timer-type))
-                   ;; duration-string from `work-timer-update-mode-line'
+                   ;; duration-string from `work-timer--update-mode-line'
                    (concat (when (< work-timer-duration 0) "-")
                            (format-seconds work-timer-time-format (abs work-timer-duration)))))))
 
-(defun work-timer-tick ()
+(defun work-timer--tick ()
   "A function invoked by `work-timer-current-timer' each second.
 Updates the mode line and plays a sound if the the duration of
 the current timer is reached."
-  (work-timer-update-mode-line)
+  (work-timer--update-mode-line)
   (let ((elapsed
          (floor (- work-timer-duration
                    (work-timer-elapsed-without-pauses
@@ -281,11 +281,11 @@ the current timer is reached."
                           :pauses work-timer-pauses))))))
     (when (and (not work-timer-overrun-p)
                (<= elapsed 0))
-      (work-timer-play-sound)
+      (work-timer--play-sound)
       (setq work-timer-overrun-p t))))
 
 ;;;; User timer duration prompts
-(defun work-timer-duration-prompt (&optional prompt default)
+(defun work-timer--duration-prompt (&optional prompt default)
   "Prompt the user for a duration.
 Parses the user string and returns the duration in seconds.
 
@@ -304,7 +304,7 @@ used."
                     default
                   input)))))
 
-(defun work-timer-surplus-prompt (&optional default)
+(defun work-timer--surplus-prompt (&optional default)
   "Prompt user for a surplus duration in seconds.
 A surplus duration denotes how much time should be carried over
 onto the next timer. DEFAULT will be the default prompted
@@ -314,7 +314,7 @@ duration."
     0))
 
 ;;;; Processing timer history
-(defun work-timer-process-history (function predicate &optional history)
+(defun work-timer--process-history (function predicate &optional history)
   "Process all entries in `work-timer-history'.
 Returns a list whose elements are the return value of FUNCTION
 applied to each entry in `work-timer-history'. Only operate
@@ -327,7 +327,7 @@ If HISTORY is provided, operate on that instead of
            when (funcall (or predicate 'identity) entry)
            collect (funcall function entry)))
 
-(defun work-timer-elapsed-without-pauses (timer-entry)
+(defun work-timer--elapsed-without-pauses (timer-entry)
   "Given TIMER-ENTRY, return seconds elapsed excluding pauses."
   (let ((total-elapsed
          (- (plist-get timer-entry :end)
@@ -345,13 +345,13 @@ If HISTORY is provided, operate on that instead of
                             (plist-get timer-entry :pauses)))))
     (- total-elapsed time-paused)))
 
-(defun work-timer-overrun (timer-entry)
+(defun work-timer--overrun (timer-entry)
   "Given TIMER-ENTRY, return seconds overran."
   (let ((duration (plist-get timer-entry :expected-duration))
-        (elapsed (work-timer-elapsed-without-pauses timer-entry)))
+        (elapsed (work-timer--elapsed-without-pauses timer-entry)))
     (- elapsed duration)))
 
-(defun work-timer-surplus-break-duration ()
+(defun work-timer--surplus-break-duration ()
   "Return surplus duration.
 The value is the sum of a two-step calculation. The first step
 adds the overrun time of the last work period. The second
@@ -366,9 +366,9 @@ decreases if you take a longer break than expected."
           (cl-find-if (lambda (entry) (equal (plist-get entry :type) 'break))
                       reverse-history))
          (work-surplus
-          (if last-work (work-timer-overrun last-work) 0))
+          (if last-work (work-timer--overrun last-work) 0))
          (break-surplus
-          (if last-break (work-timer-overrun last-break) 0)))
+          (if last-break (work-timer--overrun last-break) 0)))
     (+ work-surplus (- break-surplus))))
 
 ;;;; Duration functions
@@ -386,13 +386,13 @@ decreases if you take a longer break than expected."
          (last-break-elapsed (when last-break
                                (- (plist-get last-break :end)
                                   (plist-get last-break :start))))
-         (surplus (work-timer-surplus-prompt
+         (surplus (work-timer--surplus-prompt
                    (when last-break
                      (- (plist-get last-break :expected-duration) last-break-elapsed))))
          (duration (+ (or surplus 0)
                       (* 60 work-timer-default-break-duration))))
-    (work-timer-log "(work-timer-break-duration-basic) Surplus added: %s" surplus)
-    (work-timer-log "(work-timer-break-duration-basic) Break duration: %s" duration)
+    (work-timer--log "(work-timer-break-duration-basic) Surplus added: %s" surplus)
+    (work-timer--log "(work-timer-break-duration-basic) Break duration: %s" duration)
     duration))
 
 ;;;;; Pomodoro
@@ -409,21 +409,21 @@ decreases if you take a longer break than expected."
          (last-break-elapsed (when last-break
                                (- (plist-get last-break :end)
                                   (plist-get last-break :start))))
-         (surplus (work-timer-surplus-prompt
+         (surplus (work-timer--surplus-prompt
                    (when last-break
                      (- (plist-get last-break :expected-duration) last-break-elapsed))))
 
          (long-p (zerop (mod
                          (length
-                          (work-timer-process-history 'identity
-                                                      (lambda (entry) (eq (plist-get entry :type) 'work))))
+                          (work-timer--process-history 'identity
+                                                       (lambda (entry) (eq (plist-get entry :type) 'work))))
                          4)))
          (duration (+ (or surplus 0)
                       (if long-p
                           (* 60 work-timer-pomodoro-break-duration-long)
                         (* 60 work-timer-pomodoro-break-duration-short)))))
-    (work-timer-log "(work-timer-break-duration-pomodoro) Surplus added: %s" surplus)
-    (work-timer-log "(work-timer-break-duration-pomodoro) Break duration: %s" duration)
+    (work-timer--log "(work-timer-break-duration-pomodoro) Surplus added: %s" surplus)
+    (work-timer--log "(work-timer-break-duration-pomodoro) Break duration: %s" duration)
     duration))
 
 ;;;;; Fractional
@@ -447,13 +447,13 @@ work timer. This fraction is determined by the value of
          (last-break-elapsed (when last-break
                                (- (plist-get last-break :end)
                                   (plist-get last-break :start))))
-         (surplus (work-timer-surplus-prompt
+         (surplus (work-timer--surplus-prompt
                    (when last-break
                      (- (plist-get last-break :expected-duration) last-break-elapsed))))
          (duration (+ (or surplus 0)
                       (* work-elapsed work-timer-fractional-break-duration-fraction))))
-    (work-timer-log "(work-timer-break-duration-fractional) Surplus added: %s" surplus)
-    (work-timer-log "(work-timer-break-duration-fractional) Break duration: %s" duration)
+    (work-timer--log "(work-timer-break-duration-fractional) Surplus added: %s" surplus)
+    (work-timer--log "(work-timer-break-duration-fractional) Break duration: %s" duration)
     duration))
 
 ;;; Commands
@@ -462,7 +462,7 @@ work timer. This fraction is determined by the value of
 (defun work-timer-start (&optional start duration type)
   "Start a work timer.
 Optionally provide START which is a custom start time. See the
-docstring of `work-timer-set-timer' for the acceptable format of
+docstring of `work-timer--set-timer' for the acceptable format of
 this argument. If none is provided, the current time is used.
 
 You can also provide the optional argument DURATION for the
@@ -473,14 +473,14 @@ TYPE overrides the default timer type of `work'."
   (interactive (list nil
                      (work-timer--duration-prompt "Set timer's duration (in seconds; can also provide a sexp)")
                      nil))
-  (work-timer-set-timer (or type 'work)
-                        (or duration (funcall work-timer-work-duration-function))
-                        start)
+  (work-timer--set-timer (or type 'work)
+                         (or duration (funcall work-timer-work-duration-function))
+                         start)
   (unless global-mode-string (setq global-mode-string '("")))
   (unless (memq 'work-timer-mode-line-string global-mode-string)
     (setq global-mode-string
           (append global-mode-string '(work-timer-mode-line-string))))
-  (work-timer-log "(work-timer-start) Timer started"))
+  (work-timer--log "(work-timer-start) Timer started"))
 
 ;;;###autoload
 (defun work-timer-pause-or-continue (&optional pause-or-continue)
@@ -499,7 +499,7 @@ that action."
     (pcase pause-or-continue
       ('continue
        (when work-timer-pause-time    ; Do nothing if not currently paused
-         (work-timer-log "(work-timer-pause-or-continue) Timer continued")
+         (work-timer--log "(work-timer-pause-or-continue) Timer continued")
          ;; Move back `work-timer-end-time' for how long timer was paused
          (setq work-timer-end-time (float-time
                                     (time-add work-timer-end-time
@@ -512,7 +512,7 @@ that action."
                pauses-modified-p t)))
       ('pause
        (unless work-timer-pause-time  ; Do nothing if already paused
-         (work-timer-log "(work-timer-pause-or-continue) Timer paused")
+         (work-timer--log "(work-timer-pause-or-continue) Timer paused")
          (setq work-timer-pause-time (float-time (current-time))
                work-timer-pauses
                (append work-timer-pauses
@@ -546,13 +546,13 @@ sexps to calculate the value."
                           ('work (funcall work-timer-break-duration-function))))
                     (error
                      "[work-timer] (work-timer-cycle-finish): %s" (error-message-string err)))))
-    (work-timer-set-timer
+    (work-timer--set-timer
      (pcase work-timer-type
        ('break 'work)
        ('work 'break))
      duration)
     (setq work-timer-history new-history)
-    (work-timer-log "(work-timer-cycle-finish) Cycle finished")
+    (work-timer--log "(work-timer-cycle-finish) Cycle finished")
     (run-hooks 'work-timer-cycle-finish-hook)))
 
 ;;;###autoload
@@ -573,7 +573,7 @@ history."
         global-mode-string (remove 'work-timer-mode-line-string global-mode-string))
   (unless arg (setq work-timer-history nil))
   (force-mode-line-update t)
-  (work-timer-log "(work-timer-end) Timer ended"))
+  (work-timer--log "(work-timer-end) Timer ended"))
 
 ;;;###autoload
 (defun work-timer-start-or-finish (&optional manual)
@@ -627,16 +627,16 @@ r      Running time.")))
              (new-dur (- work-timer-end-time diff)))
         (setq work-timer-duration dur
               work-timer-end-time new-dur)
-        (if (< (work-timer-elapsed-without-pauses
+        (if (< (work-timer--elapsed-without-pauses
                 (list :start work-timer-start-time
                       :end (float-time (current-time))
                       :pauses work-timer-pauses))
                new-dur)
-            ;; Ensure `work-timer-overrun-p', which tracks whether the sound
+            ;; Ensure `work-timer--overrun-p', which tracks whether the sound
             ;; already rang, is not non-nil if the new duration is after the
             ;; elapsed time
-            (setq work-timer-overrun-p nil)
-          (setq work-timer-overrun-p t))))
+            (setq work-timer--overrun-p nil)
+          (setq work-timer--overrun-p t))))
      ((memq ch '(?r ?R))
       (let* ((offset (condition-case nil
                          (eval (read (read-from-minibuffer
@@ -646,11 +646,11 @@ r      Running time.")))
              (new-time (- work-timer-start-time offset)))
         (setq work-timer-start-time new-time)
         (if (< new-time work-timer-end-time)
-            ;; Ensure `work-timer-overrun-p', which tracks whether the sound
+            ;; Ensure `work-timer--overrun-p', which tracks whether the sound
             ;; already rang, is not non-nil if the modified time is before the
             ;; end time
-            (setq work-timer-overrun-p nil)
-          (setq work-timer-overrun-p t)))))))
+            (setq work-timer--overrun-p nil)
+          (setq work-timer--overrun-p t)))))))
 
 (defun work-timer-report ()
   "Print the statistics of this series of timers."
@@ -667,17 +667,17 @@ r      Running time.")))
           (- (plist-get (car (last work-timer-history)) :end)
              (plist-get (first work-timer-history) :start)))
          (work-count (length
-                      (work-timer-process-history 'identity
-                                                  (lambda (entry) (eq (plist-get entry :type) 'work)))))
+                      (work-timer--process-history 'identity
+                                                   (lambda (entry) (eq (plist-get entry :type) 'work)))))
          (work-sum (apply #'+
-                          (work-timer-process-history 'work-timer-elapsed-without-pauses
-                                                      (lambda (entry) (eq (plist-get entry :type) 'work)))))
+                          (work-timer--process-history 'work-timer--elapsed-without-pauses
+                                                       (lambda (entry) (eq (plist-get entry :type) 'work)))))
          (break-count (length
-                       (work-timer-process-history 'identity
-                                                   (lambda (entry) (eq (plist-get entry :type) 'break)))))
+                       (work-timer--process-history 'identity
+                                                    (lambda (entry) (eq (plist-get entry :type) 'break)))))
          (break-sum (apply #'+
-                           (work-timer-process-history 'work-timer-elapsed-without-pauses
-                                                       (lambda (entry) (eq (plist-get entry :type) 'break))))))
+                           (work-timer--process-history 'work-timer--elapsed-without-pauses
+                                                        (lambda (entry) (eq (plist-get entry :type) 'break))))))
     (message "In the last %s, you had %s work sessions and %s breaks, and worked for %s and took breaks for %s. Your work efficiency is %s (not including pauses)."
              (format-seconds "%.2h hours and %.2m minutes" elapsed-total)
              work-count
@@ -720,10 +720,10 @@ timer is a work one."
    ((not (timerp work-timer-current-timer)))
    ((eq work-timer-type 'work)
     (work-timer-pause-or-continue 'continue)
-    (work-timer-log "(work-timer-org-clock-in) Break continued"))
+    (work-timer--log "(work-timer-org-clock-in) Break continued"))
    ((eq work-timer-type 'break)
     (work-timer-pause-or-continue 'pause)
-    (work-timer-log "(work-timer-org-clock-in) Break paused"))))
+    (work-timer--log "(work-timer-org-clock-in) Break paused"))))
 
 (defun work-timer-org-clock-out ()
   "Function added to `org-clock-out-hook'.
@@ -731,7 +731,7 @@ Continue a timer if current timer is a break one."
   (cond
    ((eq work-timer-type 'break)
     (work-timer-pause-or-continue 'continue)
-    (work-timer-log "(work-timer-org-clock-out) Break continued"))))
+    (work-timer--log "(work-timer-org-clock-out) Break continued"))))
 
 ;;;###autoload
 (define-minor-mode work-timer-with-org-clock-mode
