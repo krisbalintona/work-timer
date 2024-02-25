@@ -558,9 +558,10 @@ history."
   (work-timer-log "(work-timer-end) Timer ended"))
 
 ;;;###autoload
-(defun work-timer-start-or-finish ()
-  "Conditionally start a timer or finish a cycle."
-  (interactive)
+(defun work-timer-start-or-finish (&optional manual)
+  "Conditionally start a timer or finish a cycle.
+If MANUAL is non-nil then prompt for the duration of that timer."
+  (interactive "P")
   ;; If the user wants to end a cycle amidst a pause, then end pause first. We
   ;; do this here rather than in `work-timer-cycle-finish' because this prevents
   ;; `work-timer-start' from ever being called in the middle of a pause. This
@@ -571,8 +572,13 @@ history."
   (when work-timer-pause-time
     (work-timer-pause-or-continue 'continue))
   (if (timerp work-timer-current-timer)
-      (work-timer-cycle-finish)
-    (work-timer-start work-timer-start-time work-timer-duration work-timer-type))
+      (work-timer-cycle-finish manual)
+    (work-timer-start work-timer-start-time
+                      (if manual
+                          (eval (read (read-from-minibuffer
+                                       "Set new timer's duration (in seconds; can also provide a sexp): ")))
+                        work-timer-duration)
+                      work-timer-type))
   (run-hooks 'work-timer-start-or-finish-hook))
 
 ;;;; Convenience
