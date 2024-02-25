@@ -314,7 +314,8 @@ A surplus duration denotes how much time should be carried over
 onto the next timer. DEFAULT will be the default prompted
 duration."
   (if work-timer-break-surplus-prompt-p
-      (work-timer--duration-prompt "Carry over how many seconds (also can provide a sexp)" (or default 0))
+      (work-timer--duration-prompt "Carry over how many seconds (also can provide a sexp)"
+                                   (round (or default 0)))
     0))
 
 ;;;; Processing timer history
