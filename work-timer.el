@@ -284,6 +284,35 @@ the current timer is reached."
       (work-timer-play-sound)
       (setq work-timer-overrun-p t))))
 
+;;;; User timer duration prompts
+(defun work-timer-duration-prompt (&optional prompt default)
+  "Prompt the user for a duration.
+Parses the user string and returns the duration in seconds.
+
+PROMPT is a string. If given, then use that string as the prompt
+instead. If DEFAULT is provided, that will be the default value
+used."
+  (let* ((default (if (numberp default)
+                      (number-to-string default)
+                    default))
+         (prompt (concat (or prompt
+                             "Duration (in seconds; can also provide a sexp)")
+                         (when default (format " (default %s)" default))
+                         ": "))
+         (input (read-from-minibuffer prompt nil nil nil nil default)))
+    (eval (read (if (string-empty-p input)
+                    default
+                  input)))))
+
+(defun work-timer-surplus-prompt (&optional default)
+  "Prompt user for a surplus duration in seconds.
+A surplus duration denotes how much time should be carried over
+onto the next timer. DEFAULT will be the default prompted
+duration."
+  (if work-timer-break-surplus-prompt-p
+      (work-timer--duration-prompt "Carry over how many seconds (also can provide a sexp)" (or default 0))
+    0))
+
 ;;;; Processing timer history
 (defun work-timer-process-history (function predicate &optional history)
   "Process all entries in `work-timer-history'.
@@ -341,15 +370,6 @@ decreases if you take a longer break than expected."
          (break-surplus
           (if last-break (work-timer-overrun last-break) 0)))
     (+ work-surplus (- break-surplus))))
-
-(defun work-timer-surplus-prompt (&optional default)
-  "Prompt user for a surplus duration in seconds.
-A surplus duration denotes how much time should be carried over
-onto the next timer. DEFAULT will be the default prompted
-duration."
-  (if work-timer-break-surplus-prompt-p
-      (read-number "Carry over how many seconds: " (round (or default 0)))
-    0))
 
 ;;;; Duration functions
 ;;;;; Basic
@@ -451,8 +471,7 @@ the function defined in `work-timer-work-duration-function'.
 
 TYPE overrides the default timer type of `work'."
   (interactive (list nil
-                     (eval (read (read-from-minibuffer
-                                  "Set timer's duration (in seconds; can also provide a sexp): ")))
+                     (work-timer--duration-prompt "Set timer's duration (in seconds; can also provide a sexp)")
                      nil))
   (work-timer-set-timer (or type 'work)
                         (or duration (funcall work-timer-work-duration-function))
@@ -521,8 +540,7 @@ sexps to calculate the value."
                                          :pauses work-timer-pauses))))
         (duration (condition-case err
                       (if manual
-                          (eval (read (read-from-minibuffer
-                                       "Set new timer's duration (in seconds; can also provide a sexp): ")))
+                          (work-timer--duration-prompt "Set new timer's duration (in seconds; can also provide a sexp)")
                         (pcase work-timer-type
                           ('break (funcall work-timer-work-duration-function))
                           ('work (funcall work-timer-break-duration-function))))
@@ -575,8 +593,7 @@ If MANUAL is non-nil then prompt for the duration of that timer."
       (work-timer-cycle-finish manual)
     (work-timer-start work-timer-start-time
                       (if manual
-                          (eval (read (read-from-minibuffer
-                                       "Set new timer's duration (in seconds; can also provide a sexp): ")))
+                          (work-timer--duration-prompt "Set new timer's duration (in seconds; can also provide a sexp)")
                         work-timer-duration)
                       work-timer-type))
   (run-hooks 'work-timer-start-or-finish-hook))
@@ -605,7 +622,7 @@ r      Running time.")))
                    (and (not (memq char-pressed '(?q))) char-pressed))))))
     (cond
      ((memq ch '(?d ?D))
-      (let* ((dur (* 60 (read-number "Change expected duration to (in minutes): " work-timer-default-work-duration)))
+      (let* ((dur (* 60 (work-timer--duration-prompt "Change expected duration to (in minutes)" work-timer-default-work-duration)))
              (diff (- work-timer-duration dur))
              (new-dur (- work-timer-end-time diff)))
         (setq work-timer-duration dur
