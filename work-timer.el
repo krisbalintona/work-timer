@@ -296,7 +296,9 @@ resultant token has a format that follows the one described in
 the docstring of `work-timer--duration-prompt'.
 
 This function is useful for setting a human-readable default
-value for `work-timer--duration-prompt'."
+value for `work-timer--duration-prompt'.
+
+This function is similar to the ones provided by `org-duration'."
   (let* ((time (round time))
          hours mins secs)
     (setq hours (/ time (* 60 60)))
@@ -313,7 +315,9 @@ value for `work-timer--duration-prompt'."
 Token is a string. It should look something like \"10m\" or
 \"100\". Convert that token into a number of seconds. See the
 docstring for `work-timer--duration-prompt' for possible token
-suffixes."
+suffixes.
+
+This function is similar to the ones provided by `org-duration'."
   (cond ((string-suffix-p "s" token) ; Seconds
          (string-to-number (string-remove-suffix "m" token)))
         ((string-suffix-p "m" token) ; Minutes
@@ -346,7 +350,10 @@ treated as \"20m\".
 PROMPT is a string. If given, then use that string as the prompt
 instead. If DEFAULT is provided, that will be the default number
 of seconds returned. DEFAULT must be a number (duration in
-seconds seconds) or a string that is just that number."
+seconds seconds) or a string that is just that number.
+
+This function is similar to `org-set-effort' that uses functions
+provided by `org-duration'."
   (let* ((default (if (numberp default)
                       (number-to-string default)
                     default))
