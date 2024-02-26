@@ -292,21 +292,49 @@ the current timer is reached."
 (defun work-timer--duration-prompt (&optional prompt default)
   "Prompt the user for a duration.
 Parses the user string and returns the duration in seconds.
+Parsing is done by splitting the user input by spaces and parsing
+each part into a quantity of seconds. The following suffixes are
+recognized:
+- \"s\" for seconds
+- \"m\" for minutes
+- \"h\" for hours
+So, for example, \"10m 20s\" is equivalent to 10 minutes and 20
+seconds, or 620 seconds.
+
+Any part of the user input that does not end in one of the above
+suffixes is ignored. For instance, \"1TEST\" and \"1h HELLO
+WORLD\" are both effectively read as \"1h\". The only *exception*
+will be when a part of the user input is just a number. In such a
+case, this part is treated as the number of minutes: \"20\" is
+treated as \"20m\".
 
 PROMPT is a string. If given, then use that string as the prompt
-instead. If DEFAULT is provided, that will be the default value
-used."
+instead. If DEFAULT is provided, that will be the default number
+of seconds returned. DEFAULT must be a number (duration in
+seconds seconds) or a string that is just that number."
   (let* ((default (if (numberp default)
                       (number-to-string default)
                     default))
-         (prompt (concat (or prompt
-                             "Duration (in seconds; can also provide a sexp)")
+         (prompt (concat (or prompt "Duration")
                          (when default (format " (default %s)" default))
                          ": "))
-         (input (read-from-minibuffer prompt nil nil nil nil default)))
-    (eval (read (if (string-empty-p input)
-                    default
-                  input)))))
+         (input (read-from-minibuffer prompt))
+         (tokens (string-split input))
+         (totals))
+    (dolist (token tokens)
+      (push (cond ((string-suffix-p "s" token) ; Seconds
+                   (string-to-number (string-remove-suffix "m" token)))
+                  ((string-suffix-p "m" token) ; Minutes
+                   (* 60 (string-to-number  (string-remove-suffix "m" token))))
+                  ((string-suffix-p "h" token) ; Hours
+                   (* 60 60 (string-to-number  (string-remove-suffix "h" token))))
+                  ((string-match-p "^[0-9]+$" token) ; If only numbers, then treat as minutes
+                   (* 60 (string-to-number token)))
+                  (t 0))
+            totals))
+    (if (string-empty-p input)
+        (string-to-number (or default "0"))
+      (apply #'+ totals))))
 
 (defun work-timer--surplus-prompt (&optional default)
   "Prompt user for a surplus duration in seconds.
@@ -314,7 +342,7 @@ A surplus duration denotes how much time should be carried over
 onto the next timer. DEFAULT will be the default prompted
 duration."
   (if work-timer-break-surplus-prompt-p
-      (work-timer--duration-prompt "Carry over how many seconds (also can provide a sexp)"
+      (work-timer--duration-prompt "Carry over this many much time"
                                    (round (or default 0)))
     0))
 
@@ -476,7 +504,7 @@ the function defined in `work-timer-work-duration-function'.
 
 TYPE overrides the default timer type of `work'."
   (interactive (list nil
-                     (work-timer--duration-prompt "Set timer's duration (in seconds; can also provide a sexp)")
+                     (work-timer--duration-prompt "Set timer's duration")
                      nil))
   (work-timer--set-timer (or type 'work)
                          (or duration (funcall work-timer-work-duration-function))
@@ -545,7 +573,7 @@ sexps to calculate the value."
                                          :pauses work-timer-pauses))))
         (duration (condition-case err
                       (if manual
-                          (work-timer--duration-prompt "Set new timer's duration (in seconds; can also provide a sexp)")
+                          (work-timer--duration-prompt "Set new timer's duration")
                         (pcase work-timer-type
                           ('break (funcall work-timer-work-duration-function))
                           ('work (funcall work-timer-break-duration-function))))
@@ -598,7 +626,7 @@ If MANUAL is non-nil then prompt for the duration of that timer."
       (work-timer-cycle-finish manual)
     (work-timer-start work-timer-start-time
                       (if manual
-                          (work-timer--duration-prompt "Set new timer's duration (in seconds; can also provide a sexp)")
+                          (work-timer--duration-prompt "Set new timer's duration")
                         work-timer-duration)
                       work-timer-type))
   (run-hooks 'work-timer-start-or-finish-hook))
@@ -627,7 +655,8 @@ r      Running time.")))
                    (and (not (memq char-pressed '(?q))) char-pressed))))))
     (cond
      ((memq ch '(?d ?D))
-      (let* ((dur (* 60 (work-timer--duration-prompt "Change expected duration to (in minutes)" work-timer-default-work-duration)))
+      (let* ((dur (work-timer--duration-prompt "Change expected duration to"
+                                               (* 60 work-timer-default-work-duration)))
              (diff (- work-timer-duration dur))
              (new-dur (- work-timer-end-time diff)))
         (setq work-timer-duration dur
@@ -643,11 +672,7 @@ r      Running time.")))
             (setq work-timer--overrun-p nil)
           (setq work-timer--overrun-p t))))
      ((memq ch '(?r ?R))
-      (let* ((offset (condition-case nil
-                         (eval (read (read-from-minibuffer
-                                      "Offset the current running time by (in seconds; positive increases, negative decreases; can also provide a sexp): ")))
-                       (error
-                        (message "Invalid input. Must provide a number or an elisp that evaluates to a number."))))
+      (let* ((offset (work-timer--duration-prompt "Offset the current running time by"))
              (new-time (- work-timer-start-time offset)))
         (setq work-timer-start-time new-time)
         (if (< new-time work-timer-end-time)
