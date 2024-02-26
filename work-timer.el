@@ -300,15 +300,16 @@ value for `work-timer--duration-prompt'.
 
 This function is similar to the ones provided by `org-duration'."
   (let* ((time (round time))
-         hours mins secs)
-    (setq hours (/ time (* 60 60)))
-    (setq mins (/ (- time (* 60 60 hours)) 60))
-    (setq secs (- time (+ (* 60 60 hours)
-                          (* 60 mins))))
-    (string-trim (concat
-                  (when (plusp hours) (format "%sh " hours))
-                  (when (plusp mins) (format "%sm " mins))
-                  (when (plusp secs) (format "%ss" secs))))))
+         hours mins secs time-str)
+    (setq hours (/ time (* 60 60))
+          mins (/ (- time (* 60 60 hours)) 60)
+          secs (- time (+ (* 60 60 hours)
+                          (* 60 mins)))
+          time-str (concat
+                    (when (plusp hours) (format "%sh " hours))
+                    (when (plusp mins) (format "%sm " mins))
+                    (when (plusp secs) (format "%ss" secs))))
+    (string-trim time-str)))
 
 (defun work-timer--duration-parse-token (token)
   "Parse TOKEN.
