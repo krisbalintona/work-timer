@@ -356,7 +356,7 @@ onto the next timer. DEFAULT will be the default prompted
 duration."
   (if work-timer-break-surplus-prompt-p
       (work-timer--duration-prompt "Carry over this much time"
-                                   (round (or default 0)))
+                                   (concat (number-to-string (round (or default 0))) "s"))
     0))
 
 ;;;; Processing timer history
@@ -669,7 +669,7 @@ r      Running time.")))
     (cond
      ((memq ch '(?d ?D))
       (let* ((duration (work-timer--duration-prompt "Change expected duration to"
-                                                    (/ work-timer-duration 60)))
+                                                    (concat (number-to-string (/ work-timer-duration 60)) "m")))
              (new-end (- work-timer-end-time work-timer-duration duration)))
         (setq work-timer-duration duration
               work-timer-end-time new-end
