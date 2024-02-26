@@ -289,6 +289,25 @@ the current timer is reached."
       (setq work-timer-overrun-p t))))
 
 ;;;; User timer duration prompts
+(defun work-timer--seconds-to-token (time)
+  "Un-parse TIME.
+TIME is a number that represents a quantity of seconds. The
+resultant token has a format that follows the one described in
+the docstring of `work-timer--duration-prompt'.
+
+This function is useful for setting a human-readable default
+value for `work-timer--duration-prompt'."
+  (let* ((time (round time))
+         hours mins secs)
+    (setq hours (/ time (* 60 60)))
+    (setq mins (/ (- time (* 60 60 hours)) 60))
+    (setq secs (- time (+ (* 60 60 hours)
+                          (* 60 mins))))
+    (string-trim (concat
+                  (when (plusp hours) (format "%sh " hours))
+                  (when (plusp mins) (format "%sm " mins))
+                  (when (plusp secs) (format "%ss" secs))))))
+
 (defun work-timer--duration-parse-token (token)
   "Parse TOKEN.
 Token is a string. It should look something like \"10m\" or
@@ -344,7 +363,7 @@ seconds seconds) or a string that is just that number."
     (setq duration (if (string-empty-p input)
                        (work-timer--duration-parse-token (if (stringp default)
                                                              default
-                                                           (concat (number-to-string default) "s")))
+                                                           (work-timer--seconds-to-token default)))
                      (apply #'+ totals)))
     (work-timer--log "(work-timer--duration-prompt) Duration in seconds: %s" duration)
     duration))
@@ -356,7 +375,7 @@ onto the next timer. DEFAULT will be the default prompted
 duration."
   (if work-timer-break-surplus-prompt-p
       (work-timer--duration-prompt "Carry over this much time"
-                                   (concat (number-to-string (round (or default 0))) "s"))
+                                   (work-timer--seconds-to-token (or default 0)))
     0))
 
 ;;;; Processing timer history
@@ -669,7 +688,7 @@ r      Running time.")))
     (cond
      ((memq ch '(?d ?D))
       (let* ((duration (work-timer--duration-prompt "Change expected duration to"
-                                                    (concat (number-to-string (/ work-timer-duration 60)) "m")))
+                                                    (work-timer--seconds-to-token work-timer-duration)))
              (new-end (- work-timer-end-time work-timer-duration duration)))
         (setq work-timer-duration duration
               work-timer-end-time new-end
