@@ -289,6 +289,22 @@ the current timer is reached."
       (setq work-timer-overrun-p t))))
 
 ;;;; User timer duration prompts
+(defun work-timer--duration-parse-token (token)
+  "Parse TOKEN.
+Token is a string. It should look something like \"10m\" or
+\"100\". Convert that token into a number of seconds. See the
+docstring for `work-timer--duration-prompt' for possible token
+suffixes."
+  (cond ((string-suffix-p "s" token) ; Seconds
+         (string-to-number (string-remove-suffix "m" token)))
+        ((string-suffix-p "m" token) ; Minutes
+         (* 60 (string-to-number  (string-remove-suffix "m" token))))
+        ((string-suffix-p "h" token) ; Hours
+         (* 60 60 (string-to-number  (string-remove-suffix "h" token))))
+        ((string-match-p "^[0-9]+$" token) ; If only numbers, then treat as minutes
+         (* 60 (string-to-number token)))
+        (t 0)))
+
 (defun work-timer--duration-prompt (&optional prompt default)
   "Prompt the user for a duration.
 Parses the user string and returns the duration in seconds.
@@ -323,18 +339,12 @@ seconds seconds) or a string that is just that number."
          (totals)
          (duration))
     (dolist (token tokens)
-      (push (cond ((string-suffix-p "s" token) ; Seconds
-                   (string-to-number (string-remove-suffix "m" token)))
-                  ((string-suffix-p "m" token) ; Minutes
-                   (* 60 (string-to-number  (string-remove-suffix "m" token))))
-                  ((string-suffix-p "h" token) ; Hours
-                   (* 60 60 (string-to-number  (string-remove-suffix "h" token))))
-                  ((string-match-p "^[0-9]+$" token) ; If only numbers, then treat as minutes
-                   (* 60 (string-to-number token)))
-                  (t 0))
-            totals))
+      (push (work-timer--duration-parse-token token) totals))
+    (setq default (string-to-number (or default "0")))
     (setq duration (if (string-empty-p input)
-                       (string-to-number (or default "0"))
+                       (work-timer--duration-parse-token (if (stringp default)
+                                                             default
+                                                           (concat (number-to-string default) "s")))
                      (apply #'+ totals)))
     (work-timer--log "(work-timer--duration-prompt) Duration in seconds: %s" duration)
     duration))
