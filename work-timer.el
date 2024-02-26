@@ -704,11 +704,11 @@ r      Running time.")))
               ;; Ensure `work-timer-overrun-p', which tracks whether the sound
               ;; already rang, is not non-nil if the new duration is after the
               ;; elapsed time
-              work-timer-overrun-p (>= (work-timer--elapsed-without-pauses
+              work-timer-overrun-p (<= new-end
+                                       (work-timer--elapsed-without-pauses
                                         (list :start work-timer-start-time
                                               :end (float-time (current-time))
-                                              :pauses work-timer-pauses))
-                                       new-end))))
+                                              :pauses work-timer-pauses))))))
      ((memq ch '(?r ?R))
       (let* ((offset (work-timer--duration-prompt "Offset the current running time by"))
              (new-start (- work-timer-start-time offset)))
@@ -716,7 +716,7 @@ r      Running time.")))
               ;; Ensure `work-timer-overrun-p', which tracks whether the sound
               ;; already rang, is not non-nil if the modified time is before the
               ;; end time
-              work-timer-overrun-p (>= new-start work-timer-end-time)))))))
+              work-timer-overrun-p (<= work-timer-end-time new-start)))))))
 
 (defun work-timer-report ()
   "Print the statistics of this series of timers."
