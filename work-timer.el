@@ -354,11 +354,14 @@ seconds seconds) or a string that is just that number.
 
 This function is similar to `org-set-effort' that uses functions
 provided by `org-duration'."
-  (let* ((default (if (numberp default)
-                      (number-to-string default)
-                    default))
+  (let* ((default-str (if (numberp default)
+                          (work-timer--seconds-to-token default)
+                        default))
+         (default-num (if (stringp default)
+                          (work-timer--duration-parse-token default)
+                        default))
          (prompt (concat (or prompt "Duration")
-                         (when default (format " (default %s)" default))
+                         (when default (format " (default %s)" default-str))
                          ": "))
          (input (read-from-minibuffer prompt))
          (tokens (string-split input))
@@ -366,11 +369,8 @@ provided by `org-duration'."
          (duration))
     (dolist (token tokens)
       (push (work-timer--duration-parse-token token) totals))
-    (setq default (string-to-number (or default "0")))
     (setq duration (if (string-empty-p input)
-                       (work-timer--duration-parse-token (if (stringp default)
-                                                             default
-                                                           (work-timer--seconds-to-token default)))
+                       default-num
                      (apply #'+ totals)))
     (work-timer--log "(work-timer--duration-prompt) Duration in seconds: %s" duration)
     duration))
