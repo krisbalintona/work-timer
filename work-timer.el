@@ -227,15 +227,15 @@ the start time of the timer. Should be in the format returned by
         work-timer-pauses nil
         work-timer-pause-time nil
         work-timer-overrun-p nil
-        work-timer-current-timer (run-with-timer t 1 'work-timer-tick))
-  (work-timer-update-mode-line))
+        work-timer-current-timer (run-with-timer t 1 'work-timer--tick))
+  (work-timer--update-mode-line))
 
 ;;;; Mode line
 (defun work-timer--update-mode-line ()
   "Set `work-timer-mode-line-string' appropriately."
   (let* ((type-string
           (capitalize (symbol-name work-timer-type)))
-         (elapsed (work-timer-elapsed-without-pauses
+         (elapsed (work-timer--elapsed-without-pauses
                    (list :start work-timer-start-time
                          :end (float-time (current-time))
                          :pauses work-timer-pauses)))
@@ -279,7 +279,7 @@ the current timer is reached."
   (work-timer--update-mode-line)
   (let ((elapsed
          (floor (- work-timer-duration
-                   (work-timer-elapsed-without-pauses
+                   (work-timer--elapsed-without-pauses
                     (list :start work-timer-start-time
                           :end (float-time (current-time))
                           :pauses work-timer-pauses))))))
@@ -345,7 +345,7 @@ A surplus duration denotes how much time should be carried over
 onto the next timer. DEFAULT will be the default prompted
 duration."
   (if work-timer-break-surplus-prompt-p
-      (work-timer--duration-prompt "Carry over this many much time"
+      (work-timer--duration-prompt "Carry over this much time"
                                    (round (or default 0)))
     0))
 
@@ -669,21 +669,21 @@ r      Running time.")))
                       :end (float-time (current-time))
                       :pauses work-timer-pauses))
                new-dur)
-            ;; Ensure `work-timer--overrun-p', which tracks whether the sound
+            ;; Ensure `work-timer-overrun-p', which tracks whether the sound
             ;; already rang, is not non-nil if the new duration is after the
             ;; elapsed time
-            (setq work-timer--overrun-p nil)
-          (setq work-timer--overrun-p t))))
+            (setq work-timer-overrun-p nil)
+          (setq work-timer-overrun-p t))))
      ((memq ch '(?r ?R))
       (let* ((offset (work-timer--duration-prompt "Offset the current running time by"))
              (new-time (- work-timer-start-time offset)))
         (setq work-timer-start-time new-time)
         (if (< new-time work-timer-end-time)
-            ;; Ensure `work-timer--overrun-p', which tracks whether the sound
+            ;; Ensure `work-timer-overrun-p', which tracks whether the sound
             ;; already rang, is not non-nil if the modified time is before the
             ;; end time
-            (setq work-timer--overrun-p nil)
-          (setq work-timer--overrun-p t)))))))
+            (setq work-timer-overrun-p nil)
+          (setq work-timer-overrun-p t)))))))
 
 (defun work-timer-report ()
   "Print the statistics of this series of timers."
@@ -698,7 +698,7 @@ r      Running time.")))
                               :pauses work-timer-pauses))))
          (elapsed-total
           (- (plist-get (car (last work-timer-history)) :end)
-             (plist-get (first work-timer-history) :start)))
+             (plist-get (cl-first work-timer-history) :start)))
          (work-count (length
                       (work-timer--process-history 'identity
                                                    (lambda (entry) (eq (plist-get entry :type) 'work)))))
