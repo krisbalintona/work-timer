@@ -320,7 +320,8 @@ seconds seconds) or a string that is just that number."
                          ": "))
          (input (read-from-minibuffer prompt))
          (tokens (string-split input))
-         (totals))
+         (totals)
+         (duration))
     (dolist (token tokens)
       (push (cond ((string-suffix-p "s" token) ; Seconds
                    (string-to-number (string-remove-suffix "m" token)))
@@ -332,9 +333,11 @@ seconds seconds) or a string that is just that number."
                    (* 60 (string-to-number token)))
                   (t 0))
             totals))
-    (if (string-empty-p input)
-        (string-to-number (or default "0"))
-      (apply #'+ totals))))
+    (setq duration (if (string-empty-p input)
+                       (string-to-number (or default "0"))
+                     (apply #'+ totals)))
+    (work-timer--log "(work-timer--duration-prompt) Duration in seconds: %s" duration)
+    duration))
 
 (defun work-timer--surplus-prompt (&optional default)
   "Prompt user for a surplus duration in seconds.
