@@ -1,5 +1,11 @@
 #+title: Work-timers
 
+* Why: My use case
+
+~work-timer~ has in mind users who need to regulate how often they work and take breaks. The most common cases would be having large amounts of self-directed work time, either from regularly having a capacity as a student or have flexible work schedules.
+
+My personal use case is thus. I am currently a university student. I have been using ~work-timer~ for a few months now, and it has been a tremendous help for me as an automatic means for telling me how long I should work and how long I should take a break—important for staying productive on the days I'm tired and not overworking myself on other days.
+
 * Usage
 
 ** Advantage: history
