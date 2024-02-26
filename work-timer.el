@@ -658,32 +658,27 @@ r      Running time.")))
                    (and (not (memq char-pressed '(?q))) char-pressed))))))
     (cond
      ((memq ch '(?d ?D))
-      (let* ((dur (work-timer--duration-prompt "Change expected duration to"
-                                               (* 60 work-timer-default-work-duration)))
-             (diff (- work-timer-duration dur))
-             (new-dur (- work-timer-end-time diff)))
-        (setq work-timer-duration dur
-              work-timer-end-time new-dur)
-        (if (< (work-timer--elapsed-without-pauses
-                (list :start work-timer-start-time
-                      :end (float-time (current-time))
-                      :pauses work-timer-pauses))
-               new-dur)
-            ;; Ensure `work-timer-overrun-p', which tracks whether the sound
-            ;; already rang, is not non-nil if the new duration is after the
-            ;; elapsed time
-            (setq work-timer-overrun-p nil)
-          (setq work-timer-overrun-p t))))
+      (let* ((duration (work-timer--duration-prompt "Change expected duration to"
+                                                    (/ work-timer-duration 60)))
+             (new-end (- work-timer-end-time work-timer-duration duration)))
+        (setq work-timer-duration duration
+              work-timer-end-time new-end
+              ;; Ensure `work-timer-overrun-p', which tracks whether the sound
+              ;; already rang, is not non-nil if the new duration is after the
+              ;; elapsed time
+              work-timer-overrun-p (>= (work-timer--elapsed-without-pauses
+                                        (list :start work-timer-start-time
+                                              :end (float-time (current-time))
+                                              :pauses work-timer-pauses))
+                                       new-end))))
      ((memq ch '(?r ?R))
       (let* ((offset (work-timer--duration-prompt "Offset the current running time by"))
-             (new-time (- work-timer-start-time offset)))
-        (setq work-timer-start-time new-time)
-        (if (< new-time work-timer-end-time)
-            ;; Ensure `work-timer-overrun-p', which tracks whether the sound
-            ;; already rang, is not non-nil if the modified time is before the
-            ;; end time
-            (setq work-timer-overrun-p nil)
-          (setq work-timer-overrun-p t)))))))
+             (new-start (- work-timer-start-time offset)))
+        (setq work-timer-start-time new-start
+              ;; Ensure `work-timer-overrun-p', which tracks whether the sound
+              ;; already rang, is not non-nil if the modified time is before the
+              ;; end time
+              work-timer-overrun-p (>= new-start work-timer-end-time)))))))
 
 (defun work-timer-report ()
   "Print the statistics of this series of timers."
