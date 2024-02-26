@@ -355,15 +355,18 @@ seconds seconds) or a string that is just that number.
 
 This function is similar to `org-set-effort' that uses functions
 provided by `org-duration'."
-  (let* ((default-str (if (numberp default)
-                          (work-timer--seconds-to-token default)
-                        default))
-         (default-num (if (stringp default)
+  (let* ((default-num (if (stringp default)
                           (work-timer--duration-parse-token default)
                         default))
+         (default-str (if (numberp default)
+                          (work-timer--seconds-to-token default)
+                        default))
+         (default-str (if (string-empty-p default-str)
+                          ;; Show "0s" if a default of 0 seconds was provided
+                          "0s"
+                        default-str))
          (prompt (concat (or prompt "Duration")
-                         (unless (string-empty-p default-str)
-                           (format " (default %s)" default-str))
+                         (when default (format " (default %s)" default-str))
                          ": "))
          (input (read-from-minibuffer prompt))
          (tokens (string-split input))
