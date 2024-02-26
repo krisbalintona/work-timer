@@ -73,3 +73,18 @@ Mention that I users can take the built-in break and work duration functions and
 + Mode line indictor.
 + Pomodoro-style timers.
 
+* Tips and tricks
+
+** Saving current timer across Emacs sessions with ~savehist~
+
+Sometimes you have a running timer and Emacs crashes. Or perhaps you'd like to save the ~work-timer-history~ for one reason or another. ~work-timer~ simply saves the current work timer information in variables, so you can save these variables across Emacs sessions via ~savehist~. ~work-timer~ is configured such that starting a new timer (via ~work-timer-start~ or ~work-timer-start-or-finish~) will use the already set variable values, effectively resuming the timer.
+#+begin_src emacs-lisp
+  ;; Save timer variables to resume timer across Emacs sessions
+  (dolist (var '(work-timer-start-time
+                 work-timer-duration
+                 work-timer-type
+                 work-timer-pauses
+                 work-timer-history))
+    (add-to-list 'savehist-additional-variables var))
+#+end_src
+If you do not want to save the timer history, feel free to remove ~work-timer-history~. (It might be useful to know that ~work-timer-end~ allows from wiping the entire history or just the current timer.)
