@@ -382,8 +382,7 @@ A surplus duration denotes how much time should be carried over
 onto the next timer. DEFAULT will be the default prompted
 duration."
   (if work-timer-break-surplus-prompt-p
-      (work-timer--duration-prompt "Carry over this much time"
-                                   (work-timer--seconds-to-token (or default 0)))
+      (work-timer--duration-prompt "Carry over this much time" (or default 0))
     0))
 
 ;;;; Processing timer history
@@ -538,16 +537,20 @@ Optionally provide START which is a custom start time. See the
 docstring of `work-timer--set-timer' for the acceptable format of
 this argument. If none is provided, the current time is used.
 
-You can also provide the optional argument DURATION for the
-duration of the timer in seconds. If nothing is provided, then
-the function defined in `work-timer-work-duration-function'.
+Optionally provide DURATION which is the duration of the timer in
+seconds.
+
+With `prefix-arg', prompt for the duration of the timer in
+seconds. If nothing is provided, then the function defined in
+`work-timer-work-duration-function'.
 
 TYPE overrides the default timer type of `work'."
-  (interactive (list nil
-                     (work-timer--duration-prompt "Set timer's duration")
-                     nil))
+  (interactive)
+  (setq duration (or duration (funcall work-timer-work-duration-function)))
   (work-timer--set-timer (or type 'work)
-                         (or duration (funcall work-timer-work-duration-function))
+                         (if current-prefix-arg
+                             (work-timer--duration-prompt "Set timer's duration" duration)
+                           duration)
                          start)
   (unless global-mode-string (setq global-mode-string '("")))
   (unless (memq 'work-timer-mode-line-string global-mode-string)
@@ -612,18 +615,17 @@ sexps to calculate the value."
                                          :end (float-time (current-time))
                                          :pauses work-timer-pauses))))
         (duration (condition-case err
-                      (if manual
-                          (work-timer--duration-prompt "Set new timer's duration")
-                        (pcase work-timer-type
-                          ('break (funcall work-timer-work-duration-function))
-                          ('work (funcall work-timer-break-duration-function))))
+                      (pcase work-timer-type
+                        ('break (funcall work-timer-work-duration-function))
+                        ('work (funcall work-timer-break-duration-function)))
                     (error
                      "[work-timer] (work-timer-cycle-finish): %s" (error-message-string err)))))
-    (work-timer--set-timer
-     (pcase work-timer-type
-       ('break 'work)
-       ('work 'break))
-     duration)
+    (work-timer--set-timer (pcase work-timer-type
+                             ('break 'work)
+                             ('work 'break))
+                           (if manual
+                               (work-timer--duration-prompt "Set new timer's duration" duration)
+                             duration))
     (setq work-timer-history new-history)
     (work-timer--log "(work-timer-cycle-finish) Cycle finished")
     (run-hooks 'work-timer-cycle-finish-hook)))
@@ -666,7 +668,7 @@ If MANUAL is non-nil then prompt for the duration of that timer."
       (work-timer-cycle-finish manual)
     (work-timer-start work-timer-start-time
                       (if manual
-                          (work-timer--duration-prompt "Set new timer's duration")
+                          (work-timer--duration-prompt "Set new timer's duration" work-timer-duration)
                         work-timer-duration)
                       work-timer-type))
   (run-hooks 'work-timer-start-or-finish-hook))
@@ -695,8 +697,7 @@ r      Running time.")))
                    (and (not (memq char-pressed '(?q))) char-pressed))))))
     (cond
      ((memq ch '(?d ?D))
-      (let* ((duration (work-timer--duration-prompt "Change expected duration to"
-                                                    (work-timer--seconds-to-token work-timer-duration)))
+      (let* ((duration (work-timer--duration-prompt "Change expected duration to" work-timer-duration))
              (new-end (- work-timer-end-time work-timer-duration duration)))
         (setq work-timer-duration duration
               work-timer-end-time new-end
