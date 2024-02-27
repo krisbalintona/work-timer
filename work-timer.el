@@ -302,9 +302,9 @@ This function is similar to the ones provided by `org-duration'."
           secs (- time (+ (* 60 60 hours)
                           (* 60 mins)))
           time-str (concat
-                    (when (plusp hours) (format "%sh " hours))
-                    (when (plusp mins) (format "%sm " mins))
-                    (when (plusp secs) (format "%ss" secs))))
+                    (when (cl-plusp hours) (format "%sh " hours))
+                    (when (cl-plusp mins) (format "%sm " mins))
+                    (when (cl-plusp secs) (format "%ss" secs))))
     (string-trim time-str)))
 
 (defun work-timer--duration-parse-token (token)
