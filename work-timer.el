@@ -1,18 +1,14 @@
-;;; work-timer.el --- Flexible work timers with org -*- lexical-binding: t -*-
+;;; work-timer.el --- Flexible work timers  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2023 Free Software Foundation, Inc.
+;; Copyright (C) 2023-2024  Kristoffer Balintona
 
 ;; Author: Kristoffer Balintona <krisbalintona@gmail.com>
-;; Maintainer: Kristoffer Balintona <krisbalintona@gmail.com>
-;; Created: 2023
+;; Homepage: https://github.com/krisbalintona/org-work-timer
 ;; Version: 1.0
 ;; Package-Requires: ((emacs "25.1") (compat "29.1.3.0"))
-;; Homepage: https://github.com/krisbalintona/org-work-timer
-;; Keywords: convenience
+;; Keywords: convenience, tools
 
-;; This file is part of GNU Emacs.
-
-;; This program is free software: you can redistribute it and/or modify
+;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
@@ -27,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Flexibly-defined work (and break) timer durations.
+;; Create
 
 ;;; Code:
 (require 'notifications)
