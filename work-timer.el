@@ -325,7 +325,7 @@ This function is similar to the ones provided by `org-duration'."
          (* 60 (string-to-number  (string-remove-suffix "m" token))))
         ((string-suffix-p "h" token) ; Hours
          (* 60 60 (string-to-number  (string-remove-suffix "h" token))))
-        ((string-match-p "^-?[0-9]+$" token) ; If only numbers, then treat as minutes
+        ((string-match-p "^-?[0-9.]+$" token) ; If only numbers, then treat as minutes
          (* 60 (string-to-number token)))
         (t 0)))
 
