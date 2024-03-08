@@ -385,9 +385,14 @@ provided by `org-duration'."
 A surplus duration denotes how much time should be carried over
 onto the next timer. DEFAULT will be the default prompted
 duration."
-  (if work-timer-break-surplus-prompt-p
-      (work-timer--duration-prompt "Carry over this much time" (or default 0))
-    0))
+  (let (surplus)
+    (if work-timer-break-surplus-prompt-p
+        (progn
+          (setq surplus
+                (work-timer--duration-prompt "Carry over this much time" (or default 0)))
+          (message "Carried over %s seconds" surplus)
+          surplus)
+      0)))
 
 ;;;; Processing timer history
 (defun work-timer--process-history (function predicate &optional history)
