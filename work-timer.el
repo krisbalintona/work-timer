@@ -136,8 +136,8 @@ function that returns the duration of a break in seconds."
   :group 'work-timer
   :type 'hook)
 
-(defcustom work-timer-start-or-finish-hook nil
-  "Hook run after `work-timer-start-or-finish' is called."
+(defcustom work-timer-dwim-hook nil
+  "Hook run after `work-timer-dwim' is called."
   :group 'work-timer
   :type 'hook)
 
@@ -660,7 +660,7 @@ history."
   (work-timer--log "(work-timer-end) Timer ended"))
 
 ;;;###autoload
-(defun work-timer-start-or-finish (&optional manual)
+(defun work-timer-dwim (&optional manual)
   "Conditionally start a timer or finish a cycle.
 If MANUAL is non-nil then prompt for the duration of that timer."
   (interactive "P")
@@ -676,7 +676,7 @@ If MANUAL is non-nil then prompt for the duration of that timer."
   (if (timerp work-timer-current-timer)
       (work-timer-cycle-finish manual)
     (work-timer-start work-timer-start-time work-timer-duration work-timer-type))
-  (run-hooks 'work-timer-start-or-finish-hook))
+  (run-hooks 'work-timer-dwim-hook))
 
 ;;;; Convenience
 (defun work-timer-modify ()
@@ -765,7 +765,7 @@ r      Running time.")))
   "p" #'work-timer-pause-or-continue
   "f" #'work-timer-cycle-finish
   "e" #'work-timer-end
-  "w" #'work-timer-start-or-finish
+  "w" #'work-timer-dwim
   "r" #'work-timer-report
   "m" #'work-timer-modify)
 
@@ -813,11 +813,11 @@ Continue a timer if current timer is a break one."
    (work-timer-with-org-clock-mode
     (add-hook 'org-clock-in-hook 'work-timer-org-clock-in)
     (add-hook 'org-clock-out-hook 'work-timer-org-clock-out)
-    (add-hook 'work-timer-start-or-finish-hook 'work-timer-org-agenda-dwim))
+    (add-hook 'work-timer-dwim-hook 'work-timer-org-agenda-dwim))
    (t
     (remove-hook 'org-clock-in-hook 'work-timer-org-clock-in)
     (remove-hook 'org-clock-out-hook 'work-timer-org-clock-out)
-    (remove-hook 'work-timer-start-or-finish-hook 'work-timer-org-agenda-dwim))))
+    (remove-hook 'work-timer-dwim-hook 'work-timer-org-agenda-dwim))))
 
 (provide 'work-timer)
 ;;; work-timer.el ends here
