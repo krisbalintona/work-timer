@@ -675,11 +675,7 @@ If MANUAL is non-nil then prompt for the duration of that timer."
     (work-timer-pause-or-continue 'continue))
   (if (timerp work-timer-current-timer)
       (work-timer-cycle-finish manual)
-    (work-timer-start work-timer-start-time
-                      (if manual
-                          (work-timer--duration-prompt "Set new timer's duration" work-timer-duration)
-                        work-timer-duration)
-                      work-timer-type))
+    (work-timer-start work-timer-start-time work-timer-duration work-timer-type))
   (run-hooks 'work-timer-start-or-finish-hook))
 
 ;;;; Convenience
