@@ -1,0 +1,12 @@
+#+title: Changelog of work-timer
+#+author: Kristoffer Balintona
+#+email: krisbalintona@gmail.com
+#+startup: content
+
+This document contains the release notes for each tagged commit on the project's main git repository: <https://github.com/protesilaos/denote>.
+
+The newest release is at the top. For further details, please consult the manual: <https://protesilaos.com/emacs/denote>.
+
+* Version 1.0 (9/14/2024)
+
+Initial release.
