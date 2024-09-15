@@ -449,32 +449,6 @@ If HISTORY is provided, operate on that instead of
                             (plist-get timer-entry :pauses)))))
     (- total-elapsed time-paused)))
 
-(defun work-timer--overrun (timer-entry)
-  "Given TIMER-ENTRY, return seconds overran."
-  (let ((duration (plist-get timer-entry :expected-duration))
-        (elapsed (work-timer--elapsed-without-pauses timer-entry)))
-    (- elapsed duration)))
-
-(defun work-timer--surplus-break-duration ()
-  "Return surplus duration.
-The value is the sum of a two-step calculation. The first step
-adds the overrun time of the last work period. The second
-subtracts the overrun time of the last break period. In other
-words, the surplus duration increases if you work extra, and
-decreases if you take a longer break than expected."
-  (let* ((reverse-history (nreverse work-timer-history))
-         (last-work
-          (cl-find-if (lambda (entry) (equal (plist-get entry :type) 'work))
-                      reverse-history))
-         (last-break
-          (cl-find-if (lambda (entry) (equal (plist-get entry :type) 'break))
-                      reverse-history))
-         (work-surplus
-          (if last-work (work-timer--overrun last-work) 0))
-         (break-surplus
-          (if last-break (work-timer--overrun last-break) 0)))
-    (+ work-surplus (- break-surplus))))
-
 ;;;; Duration functions
 ;;;;; Basic
 (defun work-timer-work-duration-basic ()
