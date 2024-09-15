@@ -399,8 +399,15 @@ provided by `org-duration'."
 (defun work-timer--surplus-prompt (&optional default)
   "Prompt user for a surplus duration in seconds.
 A surplus duration denotes how much time should be carried over
-onto the next timer. DEFAULT will be the default prompted
-duration."
+onto the next timer.
+
+This function will read user input in natural language (e.g. 15 min;
+read the docstring of `work-timer--duration-prompt' for acceptable
+units) and return that time in seconds. DEFAULT will be the default
+prompted duration.
+
+If `work-timer-break-surplus-prompt-p' is nil, then this function
+returns 0."
   (let (surplus)
     (if work-timer-break-surplus-prompt-p
         (progn
