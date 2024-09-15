@@ -23,7 +23,23 @@
 
 ;;; Commentary:
 
-;; Create
+;; Work-timer is a flexible package for displaying a timer in the mode line. The
+;; timer counts up, and when it reaches its set duration, a sound is played.
+;; This package stands out by automatically determining the timer duration based
+;; on simple, user-defined functions (with functions for popular use cases
+;; built-in). Notably, these functions can take into account the history of
+;; completed timers, such as their durations and total running time. This makes
+;; for a means to create timers in a DWIM fashion whose durations reliably
+;; conform to your expectations (while allowing for the freedom to deviate when
+;; things don't go according to play).
+
+;; As such, this work-timer is particularly useful for users who want to manage
+;; their work and break periods effectively, such as students aiming to be more
+;; productive. For example, the package makes it easy to work for a target of 25
+;; minutes by creating a "work" timer, then, when taking a break, creating a
+;; "break" timer for 25% of the work time. Moreover, if the user works for only
+;; 15 minutes or even 50 minutes, the break timer can still be 25% of the time
+;; worked (or not, if the user configures the appropriate function to do so).
 
 ;;; Code:
 (require 'notifications)
