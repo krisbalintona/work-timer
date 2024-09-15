@@ -770,6 +770,11 @@ r      Running time.")))
   "m" #'work-timer-modify)
 
 ;;; Org-clock integration
+(declare-function org-get-at-bol "org-macs" (property))
+(declare-function org-agenda-clock-in "org-agenda" (&optional arg))
+(declare-function org-agenda-clock-out "org-agenda" (&optional arg))
+(defvar org-clock-marker)
+
 (defun work-timer-org-agenda-dwim ()
   "Behaviors in `org-agenda' buffers when finishing a cycle.
 When finishing a cycle, clock in if the upcoming timer is a work
