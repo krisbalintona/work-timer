@@ -3,10 +3,10 @@
 ;; Copyright (C) 2023-2024  Kristoffer Balintona
 
 ;; Author: Kristoffer Balintona <krisbalintona@gmail.com>
-;; Homepage: https://github.com/krisbalintona/org-work-timer
 ;; Version: 1.0
 ;; Package-Requires: ((emacs "25.1") (compat "29.1.3.0"))
 ;; Keywords: convenience, tools
+;; URL: https://github.com/krisbalintona/org-work-timer
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
