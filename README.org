@@ -1,66 +1,70 @@
 #+title: Work-timers
 
-* Why: My use case
+#  LocalWords:  Tmr Protesilaos's durations
 
-~work-timer~ has in mind users who need to regulate how often they work and take breaks. The most common cases would be having large amounts of self-directed work time, either from regularly having a capacity as a student or have flexible work schedules.
+* What is this and why
 
-My personal use case is thus. I am currently a university student. I have been using ~work-timer~ for a few months now, and it has been a tremendous help for me as an automatic means for telling me how long I should work and how long I should take a break—important for staying productive on the days I'm tired and not overworking myself on other days.
+Work-timer has in mind users who seek to /regulate/ the duration and frequency in which they work and take breaks from their work. Those who have have large amounts of self-directed work time, for instance students and industrious employees, will appreciate this package the most. Work-timer is meant to be an automatic and therefore zero-effort way to apportion how long you should be taking a break given how long you worked (or: how long you should work given how long you want to take a break).
+
+In addition to setting the duration of timers in a way desirable to the user, work-timer supports setting durations of timers but going beyond them, modifying the parameters of the current timer, pausing timers, and dynamically prompting for additions or subtractions to timer durations based on deviations in the duration and elapsed time of the durations of previous timers. (i.e. surplus time). (See [[*Concepts][Concepts]] for an explanation of relevant concepts.)
 
 * Usage
 
-** Advantage: history
+** Workflow
 
-#+begin_comment
-Include annotated image (numbered elements, like a instructional diagram) that shows example data for ~work-timer-history~.
-#+end_comment
+Users are meant to start a working timer either with ~work-timer-start~ or ~work-timer-dwim~. If during the timer the user wishes to modify the parameters of the timer, they can call ~work-timer-modify~. When they wish, they can call ~work-timer-cycle-finish~ or ~work-timer-dwim~ to end the current timer and start a break timer. Then once they wish, they can once again call ~work-timer-cycle-finish~ or ~work-timer-dwim~ to end that timer and begin a new working timer.
 
-* Mimicking ~org-pomodoro~
+The durations of all timers are automatically determined according to ~work-timer-work-duration-function~ and ~work-timer-break-duration-function~.
 
-#+begin_comment
-Include an example set up for the 50-minute variant
-#+end_comment
+** Concepts
 
-* Mimicking ~org-pomodoro-third-time~
+*Running or elapsed time:* Every timer has a running time, that is, the time since the timer began. (Using ~work-timer-modify~, the running time of a timer can be modified.) This is effectively a stopwatch.
 
-#+begin_comment
-Include example set ups for different fractional break times?
-#+end_comment
++ "Durations" :: Throughout this README, timers are said to have durations which is determined once the timer is started. (Using ~work-timer-modify~, the duration of a timer can be modified.) A sound (~work-timer-sound~) will play once the running time of the timer meets that duration. However, timers will continue to run beyond their duration indefinitely. This allows users the flexibility to go over or under the duration initially set by the timer (and take into account this overrun duration in ~work-timer-work-duration-function~ and ~work-timer-break-duration-function~ if they are configured to do so). In total, "durations" should be thought of more as targets rather than end-points.
++ Overrun time :: The "overrun" time of a timer is the amount of time a user has spent passed the duration of the timer. It is the difference between the running time and duration. Overrun time can be usefully incorporated into ~work-timer-work-duration-function~ or ~work-timer-break-duration-function~.
++ Working and break timers :: Work-timer has "working" timers and "break" timers.[fn:1] These are essentially timers labeled as such to help determine the parameters of following timers. For instance, a user may want their break timer durations to be determined separately from their work timer durations.
++ Timer history :: The parameters of every timer (e.g. type, duration, running time, and pauses) are stored in ~work-timer-history~. In this way, ~work-timer-work-duration-function~ or ~work-timer-break-duration-function~ can leverage details of previous timer(s) to determine the duration for the next timer. The history is cleared when ~work-timer-end~ is called.
++ Surplus or "carry over" time :: Surplus time is the amount of time added to a timer based on the amount of overrun time of /previous timer(s) of the same type/.
 
-* Advanced configuration
+  For example, if I worked for a period, then took a break 4 minutes shorter than my duration, the next break timer I have will ask if I want to add 4 minutes to the timer (or another user-inputted time). Likewise, if I took a break for 6 minutes longer than I should've, the next break timer will ask if I want to subtract 6 minutes (or another user-inputted time) from my break. *Effectively, considering surplus time allows the user to "make up" for going over time in breaks or "given themselves a reward" for going above and beyond in work.*
 
-** Internals
+  Currently, every built-in option for ~work-timer-break-duration-function~ considers surplus time when creating a new timer if ~work-timer-break-surplus-prompt-p~ is non-nil. (The current implementation of built-in break-duration functions will prompt the user for a surplus time before it is added.)
 
-#+begin_comment
-Include Mermaid diagram showcasing the interaction between the layers of the program. One end should be the USER, another the MODE LINE TIMER. In between should be the layers of (at the time of writing this): HISTORY, DURATION FUNCTIONS
-#+end_comment
+[fn:1] Work-timer is written such that users can neatly hack the internals of work-timer to add any number of other types of timers.
 
-** Relevant variables and functions
+** Notable customizable variables
 
-** Example configuration
++ ~work-timer-debug~: Whether to print useful debugging messages.
++ ~work-timer-sound~: Sound file played when a timer's running time meets its duration.
++ ~work-timer-notifications-p~: Whether to send notifications.
++ ~work-timer-work-duration-function~: Function used to calculate the duration of a new working timer.
++ ~work-timer-break-duration-function~: Function used to calculate the duration of a new break timer.
++ ~work-timer-default-*~: Variables relevant to the default/basic style of timers.
++ ~work-timer-pomodoro-*~: Variables relevant to the [[https://en.wikipedia.org/wiki/Pomodoro_Technique][Pomodoro]] style of timers.
++ ~work-timer-fractional-*~: Variables relevant to the "fractional" style of timers. (See [[*Org-pomodoro-third-time][Org-pomodoro-third-time]] for a description of the fractional style of timer.)
++ ~work-timer-break-surplus-prompt-p~: Whether to prompt for a surplus time (see [[*Concepts][Concepts]] for a description of surplus time) when creating a new timer.[fn:2]
 
-#+begin_comment
-Include my own configuration?
-#+end_comment
+[fn:2] The prompt is only shown for break/work timer functions that use the ~work-timer--surplus-prompt~ function.
 
-** Suggestions
+** Commands
 
-#+begin_comment
-Mention that I users can take the built-in break and work duration functions and…
-+ Advise (e.g. override) them.
-+ Create their own functions that wrap an existing function
-+ Create their own functions from scratch
-#+end_comment
+| Command                      | Keybind   | Description                                             |
+|------------------------------+-----------+---------------------------------------------------------|
+| ~work-timer-start~             | C-c o w s | Start a "working" timer                                 |
+| ~work-timer-cycle-finish~      | C-c o w f | Start a timer meant to proceed[fn:3] the current timer  |
+| ~work-timer-end~               | C-c o w e | End current timer and clear history                     |
+| ~work-timer-dwim~              | C-c o w w | Either start a timer or cycle to a new timer            |
+| ~work-timer-pause-or-continue~ | C-c o w p | Pause or continue the running time of the current timer |
+| ~work-timer-modify~            | C-c o w m | Modify the parameters of the current timer              |
+| ~work-timer-report~            | C-c o w r | Print out statistics about ~work-timer-history~           |
 
-* Inspirations and related packages
+[fn:3] That is, start a working timer if the current one is a break timer and start a break timer if the current one is a working timer.
 
-+ [[https://github.com/telotortium/org-pomodoro-third-time][Org-pomodoro-third-time: Adapt org-pomodoro to implement the Third Time system]]
-  (mention differences tk)
-+ Org-timer: built-in org-mode package.
-+ Tmr: Protesilaos's timer package.
+** Integration with org-agenda
 
-#  LocalWords:  Tmr Protesilaos's
+Additionally, ~work-timer-with-org-clock-mode~ is a global minor mode that allows ~work-timer-dwim~ to work in org-agenda buffers. Calling ~work-timer-dwim~ clocks in the todo at point (in org-agenda buffers) while starting a work timer and clocks out the current todo (only in org-agenda buffers) while starting a break timer. (There is additional functionality written such that other behaviors between org-agenda and work-timer work as expected. See ~work-timer-org-clock-in~, ~work-timer-org-clock-out~, and ~work-timer-org-agenda-dwim~.)
 
-* Comparison to ~org-pomodoro~
+* Comparison to org-pomodoro
 
 ** Differences
 
@@ -75,15 +79,35 @@ Mention that I users can take the built-in break and work duration functions and
 
 ** Similarities
 
-+ Overrun timers.
-+ Mode line indictor.
++ Overrun in timers.
++ Mode line indicator.
 + Pomodoro-style timers.
++ ~org-agenda~ integration
+
+** Why I use work-timer instead of using org-pomodoro
+
+Overall, org-pomodoro comes closest to the behavior I seek. However, I found org-pomodoro lacking in flexibility. Flexibility in which sense? In two senses:
+1. *In-practice.* There are many cases when I hoped org-pomodoro could support me doing one thing while it could not. To name just a few:
+   a. /Pausing./ Sometimes I want to pause a timer because, say, I want to go to the bathroom without chipping away at the current work or break timer.
+   b. /Flexibility in timer durations./ Sometimes I might be feeling particularly sluggish or particularly productive, and org-pomodoro did not have the flexibility for me to painlessly work or take a break for as long as I have in mind while also maintaining its purpose: off-loading the mental work of keeping such information top-of-mind to Emacs.
+2. *User-side hacking.* org-pomodoro seemed implemented in such a way as to preclude as possibilities the functions are so outlined. Or, at least make it difficult.
+As such, I made work-timer to try to ameliorate these pains.
+
+* Mimicking X package
+
+** Org-pomodoro
+
+Setting ~work-timer-work-duration-function~ to ~work-timer-work-duration-pomodoro~ and ~work-timer-break-duration-function~ to ~work-timer-break-duration-pomodoro~ will mimic a pomodoro-style workflow. Working timers will be 25 minutes long (configurable by ~work-timer-pomodoro-work-duration~; the pomodoro technique Kis usually don in multiples of 25 minutes, the second most common working duration being 50 minutes with 10 minute breaks) and break timers will be 5 minutes long (~work-timer-pomodoro-break-duration-short~) with 20 minute long breaks every 4 working timers (~work-timer-pomodoro-break-duration-long~).
+
+** Org-pomodoro-third-time
+
+Setting ~work-timer-work-duration-function~ to ~work-timer-work-duration-fractional~ and ~work-timer-break-duration-function~ ~work-timer-break-duration-fractional~ will create a workflow similar to org-third-time's workflow. Work timers will be 25 minutes long (~work-timer-fractional-work-duration~ ) and break timers will be 0.2 times (~work-timer-fractional-break-duration-fraction~) the elapsed working timer (read [[*Concepts][Concepts]] for the difference between "durations" and "elapsed times").
 
 * Tips and tricks
 
 ** Saving current timer across Emacs sessions with ~savehist~
 
-Sometimes you have a running timer and Emacs crashes. Or perhaps you'd like to save the ~work-timer-history~ for one reason or another. ~work-timer~ simply saves the current work timer information in variables, so you can save these variables across Emacs sessions via ~savehist~. ~work-timer~ is configured such that starting a new timer (via ~work-timer-start~ or ~work-timer-start-or-finish~) will use the already set variable values, effectively resuming the timer.
+Sometimes you have a running timer and Emacs crashes. Or perhaps you'd like to save the ~work-timer-history~ for one reason or another. work-timer simply saves the current work timer information in variables, so you can save these variables across Emacs sessions via ~savehist~. work-timer is configured such that starting a new timer (via ~work-timer-start~ or ~work-timer-start-or-finish~) will use the already set variable values, effectively resuming the timer.
 #+begin_src emacs-lisp
   ;; Save timer variables to resume timer across Emacs sessions
   (dolist (var '(work-timer-start-time
@@ -93,4 +117,11 @@ Sometimes you have a running timer and Emacs crashes. Or perhaps you'd like to s
                  work-timer-history))
     (add-to-list 'savehist-additional-variables var))
 #+end_src
-If you do not want to save the timer history, feel free to remove ~work-timer-history~. (It might be useful to know that ~work-timer-end~ allows from wiping the entire history or just the current timer.)
+If you do not want to save the timer history, feel free to remove ~work-timer-history~. (It might be useful to know that ~work-timer-end~ wipes ~work-timer-history~.)
+
+* Inspirations and related packages
+
++ [[https://github.com/telotortium/org-pomodoro-third-time][Org-pomodoro-third-time: Adapt org-pomodoro to implement the Third Time system]]
++ Org-timer: built-in org-mode package.
++ [[https://github.com/protesilaos/tmr/][Tmr]]: Protesilaos Stavrou's timer package.
++ [[https://github.com/marcinkoziej/org-pomodoro][org-pomodoro: pomodoro technique for org-mode]]
