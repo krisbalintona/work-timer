@@ -213,7 +213,7 @@ The log buffer's name is set by `work-timer-log-buffer-name'."
       (let* ((face '(:weight bold :inherit warning))
              (timestamp (format-time-string "[%F %T] " (current-time)))
              (str (concat (propertize timestamp 'face face)
-                          (apply 'format format-string objects)))
+                          (apply #'format format-string objects)))
              (propertized-str
               (propertize str 'face '(:weight bold)))
              (prefix
@@ -813,13 +813,13 @@ Continue a timer if current timer is a break one."
   :group 'work-timer
   (cond
    (work-timer-with-org-clock-mode
-    (add-hook 'org-clock-in-hook 'work-timer-org-clock-in)
-    (add-hook 'org-clock-out-hook 'work-timer-org-clock-out)
-    (add-hook 'work-timer-dwim-hook 'work-timer-org-agenda-dwim))
+    (add-hook 'org-clock-in-hook #'work-timer-org-clock-in)
+    (add-hook 'org-clock-out-hook #'work-timer-org-clock-out)
+    (add-hook 'work-timer-dwim-hook #'work-timer-org-agenda-dwim))
    (t
-    (remove-hook 'org-clock-in-hook 'work-timer-org-clock-in)
-    (remove-hook 'org-clock-out-hook 'work-timer-org-clock-out)
-    (remove-hook 'work-timer-dwim-hook 'work-timer-org-agenda-dwim))))
+    (remove-hook 'org-clock-in-hook #'work-timer-org-clock-in)
+    (remove-hook 'org-clock-out-hook #'work-timer-org-clock-out)
+    (remove-hook 'work-timer-dwim-hook #'work-timer-org-agenda-dwim))))
 
 (provide 'work-timer)
 ;;; work-timer.el ends here
