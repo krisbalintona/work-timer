@@ -128,14 +128,14 @@ Additionally, ~work-timer-with-org-clock-mode~ is a global minor mode that allow
 :CUSTOM_ID: differences
 :END:
 
-+ ~work-timer~ supports arbitrarily complex ways to set the duration of timers. For instance, built-in is support determining timer duration based on the history of ran timers and how much time the previous was overran by.
-+ ~work-timer~ supports seamless user configuration by means of ~work-timer-work-duration-function~ and ~work-timer-break-duration-function~.
-  - ~work-timer~ also has more built-in support for useful ways to determine break and work durations beyond Pomodoro-style timers, e.g., ~work-timer-fractional-*-duration~.
-+ ~work-timer~ offers ~work-timer-modify~ to modify the parameters (e.g. running time, duration) of the currently running timer.
-+ ~work-timer~ supports arbitrary timer types (for more flexibility than just work-break cycles).
-+ ~work-timer~ supports manual entry of timer duration when desired.
-+ ~work-timer~ supports pausing of timers.
-+ ~work-timer~ generally has cleaner code logic and more points of entry for users, making it more extensible, I argue. For example, ~work-timer-history~ and the several variables that hold information for the current timer are accessible for whatever the user needs, whether it be defining their own ~work-timer-work-duration-function~ or adding to ~work-timer-modify~.
++ Work-timer supports arbitrarily complex ways to set the duration of timers. For instance, built-in is support determining timer duration based on the history of ran timers and how much time the previous was overran by.
++ work-timer supports seamless user configuration by means of ~work-timer-work-duration-function~ and ~work-timer-break-duration-function~.
+  - work-timer also has more built-in support for useful ways to determine break and work durations beyond Pomodoro-style timers, e.g., ~work-timer-fractional-*-duration~.
++ Work-timer offers ~work-timer-modify~ to modify the parameters (e.g. running time, duration) of the currently running timer.
++ Work-timer supports arbitrary timer types (for more flexibility than just work-break cycles).
++ Work-timer supports manual entry of timer duration when desired.
++ Work-timer supports pausing of timers.
++ Work-timer generally has cleaner code logic and more points of entry for users, making it more extensible, I argue. For example, ~work-timer-history~ and the several variables that hold information for the current timer are accessible for whatever the user needs, whether it be defining their own ~work-timer-work-duration-function~ or adding to ~work-timer-modify~.
 
 ** Similarities
 :PROPERTIES:
