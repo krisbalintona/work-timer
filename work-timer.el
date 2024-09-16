@@ -145,8 +145,23 @@ own function that returns the duration of a break in seconds."
   :group 'work-timer
   :type 'float)
 
-(defcustom work-timer-break-surplus-prompt-p t
-  "Whether to prompt for a surplus duration for break timers."
+(defcustom work-timer-break-add-surplus-p t
+  "Whether to add surplus time for break timers.
+The built-in break duration functions leverage
+`work-timer--surplus-prompt' to prompt then add the surplus time if this
+value is non-nil. User-defined break functions can choose to call
+`work-timer--surplus-prompt' or incorporate surplus time another way."
+  :type 'boolean
+  :group 'work-timer)
+
+(defcustom work-timer-break-force-surplus-p nil
+  "Whether to skip prompting for surplus time for break timers.
+Currently,the built-in break duration functions leverage
+`work-timer--surplus-prompt' to add surplus time (if
+`work-timer-break-add-surplus-p' is non-nil). By default,
+`work-timer--surplus-prompt' prompts the user to confirm to add the
+surplus time. When this variable is non-nil, the user will not be
+prompted and instead the surplus time immediately added."
   :type 'boolean
   :group 'work-timer)
 
@@ -399,26 +414,31 @@ provided by `org-duration'."
     (work-timer--log "(work-timer--duration-prompt) Duration in seconds: %s" duration)
     duration))
 
-(defun work-timer--surplus-prompt (&optional default)
+(defun work-timer--surplus-prompt (&optional prompt-default no-prompt)
   "Prompt user for a surplus duration in seconds.
-A surplus duration denotes how much time should be carried over
-onto the next timer.
+A surplus duration denotes how much time should be carried over onto the
+next timer.
 
 This function will read user input in natural language (e.g. 15 min;
 read the docstring of `work-timer--duration-prompt' for acceptable
-units) and return that time in seconds. DEFAULT will be the default
-prompted duration.
+units) and return that time in seconds. PROMPT-DEFAULT will be the
+default prompted duration.
 
-If `work-timer-break-surplus-prompt-p' is nil, then this function
-returns 0."
-  (let (surplus)
-    (if work-timer-break-surplus-prompt-p
-        (progn
-          (setq surplus
-                (work-timer--duration-prompt "Carry over this much time" (or default 0)))
-          (message "Carried over %s seconds" surplus)
-          surplus)
-      0)))
+If `work-timer-break-add-surplus-p' is nil, then this function returns
+0.
+
+Assuming `work-timer-break-add-surplus-p' is non-nil and NO-PROMPT or
+`work-timer-break-force-surplus-p' is non-nil, then the user will not be
+prompted for a value and instead the surplus value will be returned
+immediately (i.e. PROMPT-DEFAULT if non-nil, otherwise 0)."
+  (let ((surplus (cond
+                  ((and work-timer-break-add-surplus-p (or work-timer-break-force-surplus-p no-prompt))
+                   prompt-default)
+                  (work-timer-break-add-surplus-p
+                   (work-timer--duration-prompt "Carry over this much time" (or prompt-default 0)))
+                  (t 0))))
+    (message "Carried over %s seconds" surplus)
+    surplus))
 
 ;;;; Processing timer history
 (defun work-timer--process-history (function predicate &optional history)
