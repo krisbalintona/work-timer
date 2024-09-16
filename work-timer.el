@@ -639,10 +639,10 @@ sexps to calculate the value."
     (run-hooks 'work-timer-cycle-finish-hook)))
 
 ;;;###autoload
-(defun work-timer-end (arg)
-  "End the current timer and clear history.
-If called with ARG, just end the current timer without clearing
-history."
+(defun work-timer-end (&optional clear-history)
+  "End the current timer.
+If CLEAR-HISTORY is non-nil (e.g. command called with `prefix-arg'), also
+clear `work-timer-history'."
   (interactive "^P")
   (when (timerp work-timer-current-timer)
     (cancel-timer work-timer-current-timer))
@@ -654,7 +654,7 @@ history."
         work-timer-pause-time nil
         work-timer-pauses nil
         global-mode-string (remove 'work-timer-mode-line-string global-mode-string))
-  (unless arg (setq work-timer-history nil))
+  (when clear-history (setq work-timer-history nil))
   (force-mode-line-update t)
   (work-timer--log "(work-timer-end) Timer ended"))
 
