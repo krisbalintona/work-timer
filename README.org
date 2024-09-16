@@ -14,7 +14,7 @@
   - [[#workflow][Workflow]]
   - [[#concepts][Concepts]]
   - [[#notable-customizable-variables][Notable customizable variables]]
-  - [[#commands][Commands]]
+  - [[#commands-and-keybinds][Commands and keybinds]]
   - [[#integration-with-org-agenda][Integration with org-agenda]]
 - [[#comparison-to-org-pomodoro][Comparison to org-pomodoro]]
   - [[#differences][Differences]]
@@ -88,20 +88,25 @@ All customizable variables can be seen and edited via =M-x customize-group RET w
 
 [fn:2] The prompt is only shown for break/work timer functions that use the ~work-timer--surplus-prompt~ function.
 
-** Commands
+** Commands and keybinds
 :PROPERTIES:
-:CUSTOM_ID: commands
+:CUSTOM_ID: commands-and-keybinds
 :END:
 
-| Command                      | Keybind   | Description                                             |
-|------------------------------+-----------+---------------------------------------------------------|
-| ~work-timer-start~             | C-c o w s | Start a "working" timer                                 |
-| ~work-timer-cycle-finish~      | C-c o w f | Start a timer meant to proceed[fn:3] the current timer  |
-| ~work-timer-end~               | C-c o w e | End current timer and clear history                     |
-| ~work-timer-dwim~              | C-c o w w | Either start a timer or cycle to a new timer            |
-| ~work-timer-pause-or-continue~ | C-c o w p | Pause or continue the running time of the current timer |
-| ~work-timer-modify~            | C-c o w m | Modify the parameters of the current timer              |
-| ~work-timer-report~            | C-c o w r | Print out statistics about ~work-timer-history~           |
+Work-timer provides the ~work-timer-prefix-map~ keymap. Bind this keymap to any keybind you wish, e.g.:
+#+begin_src emacs-lisp
+  (define-key global-map (kbd "C-c w") work-timer-prefix-map)
+#+end_src
+Below are the commands bound in ~work-timer-prefix-map~ and their keybinds in that keymap.
+| Command                      | Keybind | Description                                             |
+|------------------------------+---------+---------------------------------------------------------|
+| ~work-timer-start~             | s       | Start a "working" timer                                 |
+| ~work-timer-cycle-finish~      | f       | Start a timer meant to proceed[fn:3] the current timer  |
+| ~work-timer-end~               | e       | End current timer and clear history                     |
+| ~work-timer-dwim~              | w       | Either start a timer or cycle to a new timer            |
+| ~work-timer-pause-or-continue~ | p       | Pause or continue the running time of the current timer |
+| ~work-timer-modify~            | m       | Modify the parameters of the current timer              |
+| ~work-timer-report~            | r       | Print out statistics about ~work-timer-history~           |
 
 [fn:3] That is, start a working timer if the current one is a break timer and start a break timer if the current one is a working timer.
 
