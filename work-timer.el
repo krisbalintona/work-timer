@@ -4,7 +4,7 @@
 
 ;; Author: Kristoffer Balintona <krisbalintona@gmail.com>
 ;; Version: 1.0
-;; Package-Requires: ((emacs "25.1") (compat "29.1.3.0"))
+;; Package-Requires: ((emacs "28.1") (compat "29.1.3.0"))
 ;; Keywords: convenience, tools
 ;; URL: https://github.com/krisbalintona/org-work-timer
 
@@ -43,6 +43,7 @@
 
 ;;; Code:
 (require 'notifications)
+(require 'transient)
 
 ;;; Customizable variables
 (defgroup work-timer nil
@@ -767,6 +768,19 @@ r      Running time.")))
   "w" #'work-timer-dwim
   "r" #'work-timer-report
   "m" #'work-timer-modify)
+
+;;;###autoload (autoload 'work-timer-transient-menu "work-timer" nil t)
+(transient-define-prefix work-timer-transient-menu ()
+  "Transient menu for work-timer commands."
+  ["Managing timers"
+   ("s" "Start working timer" work-timer-start)
+   ("p" "Pause or continue a timer" work-timer-pause-or-continue)
+   ("f" "Cycle timer (end current timer and begin the next)" work-timer-cycle-finish)
+   ("e" "End the current timer" work-timer-end)
+   ("w" "DWIM (start or cycle)" work-timer-dwim)]
+  ["Other"
+   ("r" "Print statistics of timer history" work-timer-report)
+   ("m" "Modify the parameters of the current timer" work-timer-modify)])
 
 ;;; Org-clock integration
 (declare-function org-get-at-bol "org-macs" (property))

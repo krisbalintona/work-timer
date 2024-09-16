@@ -109,6 +109,8 @@ Below are the commands bound in ~work-timer-prefix-map~ and their keybinds in th
 | ~work-timer-modify~            | m       | Modify the parameters of the current timer              |
 | ~work-timer-report~            | r       | Print out statistics about ~work-timer-history~           |
 
+Additionally, work-timer provides the ~work-timer-transient-menu~ transient menu. Users can alternatively bind this transient map instead of  ~work-timer-prefix-map~.
+
 [fn:3] That is, start a working timer if the current one is a break timer and start a break timer if the current one is a working timer.
 
 ** Integration with org-agenda
