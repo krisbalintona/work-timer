@@ -47,8 +47,8 @@
 ;;; Customizable variables
 (defgroup work-timer nil
   "Work-timer customization."
-  :tag "Org work timer"
-  :group 'work-timer)
+  :group 'environment
+  :link '(url-link :tag "Homepage" "https://github.com/krisbalintona/work-timer"))
 
 (defcustom work-timer-debug nil
   "Whether log messages should be printed.
@@ -110,37 +110,37 @@ function that returns the duration of a break in seconds."
 (defcustom work-timer-default-work-duration 30
   "Default number of minutes for work timers."
   :group 'work-timer
-  :type 'number)
+  :type 'natnum)
 
 (defcustom work-timer-default-break-duration 10
   "Default number of minutes for break timers."
   :group 'work-timer
-  :type 'number)
+  :type 'natnum)
 
 (defcustom work-timer-pomodoro-work-duration 25
   "Number of minutes for Pomodoro work timers."
   :group 'work-timer
-  :type 'number)
+  :type 'natnum)
 
 (defcustom work-timer-pomodoro-break-duration-short 5
   "Number of minutes for short (i.e. regular) Pomodoro timers."
   :group 'work-timer
-  :type 'number)
+  :type 'natnum)
 
 (defcustom work-timer-pomodoro-break-duration-long 20
   "Number of minutes for long (after four cycles) Pomodoro timers."
   :group 'work-timer
-  :type 'number)
+  :type 'natnum)
 
 (defcustom work-timer-fractional-work-duration 25
   "Number of minutes for fractional work timers."
   :group 'work-timer
-  :type 'number)
+  :type 'natnum)
 
 (defcustom work-timer-fractional-break-duration-fraction 0.2
   "Fraction of work time used to determine break timer."
   :group 'work-timer
-  :type 'number)
+  :type 'float)
 
 (defcustom work-timer-break-surplus-prompt-p t
   "Whether to prompt for a surplus duration for break timers."
