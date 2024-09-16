@@ -75,6 +75,7 @@ The durations of all timers are automatically determined according to ~work-time
 :CUSTOM_ID: notable-customizable-variables
 :END:
 
+All customizable variables can be seen and edited via =M-x customize-group RET work-timer=. However, below are a few variables most users would like to be aware of.
 + ~work-timer-debug~: Whether to print useful debugging messages.
 + ~work-timer-sound~: Sound file played when a timer's running time meets its duration.
 + ~work-timer-notifications-p~: Whether to send notifications.
