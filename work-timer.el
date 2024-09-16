@@ -88,24 +88,26 @@ Accepted file types are those that `ffplay' can run."
 (defcustom work-timer-work-duration-function
   'work-timer-work-duration-basic
   "Calculate the duration for work timers (in seconds).
-
-Possible values are `work-timer-work-duration-basic',
-`work-timer-work-duration-fractional',
-`work-timer-work-duration-pomodoro'and a user-defined
-function that returns the duration of a break in seconds."
+Work-timer provides several built-in options, or users can provide their
+own function that returns the duration of a break in seconds."
   :group 'work-timer
-  :type 'function)
+  :type '(choice
+          (function :tag "Basic" work-timer-work-duration-basic)
+          (function :tag "Pomodoro" work-timer-work-duration-pomodoro)
+          (function :tag "Fractional" work-timer-work-duration-fractional)
+          (function :Other)))
 
 (defcustom work-timer-break-duration-function
   'work-timer-break-duration-basic
   "Calculate the duration for work timers (in seconds).
-
-Possible values are `work-timer-break-duration-basic',
-`work-timer-break-duration-fractional',
-`work-timer-break-duration-pomodoro' and a user-defined
-function that returns the duration of a break in seconds."
+Work-timer provides several built-in options, or users can provide their
+own function that returns the duration of a break in seconds."
   :group 'work-timer
-  :type 'function)
+  :type '(choice
+          (function :tag "Basic" work-timer-break-duration-basic)
+          (function :tag "Pomodoro" work-timer-break-duration-pomodoro)
+          (function :tag "Fractional" work-timer-break-duration-fractional)
+          (function :Other)))
 
 (defcustom work-timer-default-work-duration 30
   "Default number of minutes for work timers."
