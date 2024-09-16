@@ -35,7 +35,7 @@
 
 Work-timer has in mind users who seek to /regulate/ the duration and frequency in which they work and take breaks from their work. Those who have have large amounts of self-directed work time, for instance students and industrious employees, will appreciate this package the most. Work-timer is meant to be an automatic and therefore zero-effort way to apportion how long you should be taking a break given how long you worked (or: how long you should work given how long you want to take a break).
 
-In addition to setting the duration of timers in a way desirable to the user, work-timer supports setting durations of timers but going beyond them, modifying the parameters of the current timer, pausing timers, and dynamically prompting for additions or subtractions to timer durations based on deviations in the duration and elapsed time of the durations of previous timers. (i.e. surplus time). (See [[*Concepts][Concepts]] for an explanation of relevant concepts.)
+In addition to setting the duration of timers in a way desirable to the user, work-timer supports setting durations of timers but going beyond them, modifying the parameters of the current timer, pausing timers, and dynamically prompting for additions or subtractions to timer durations based on deviations in the duration and elapsed time of the durations of previous timers. (i.e. surplus time). (See [[#concepts][Concepts]] for an explanation of relevant concepts.)
 
 * Usage
 :PROPERTIES:
@@ -82,8 +82,8 @@ The durations of all timers are automatically determined according to ~work-time
 + ~work-timer-break-duration-function~: Function used to calculate the duration of a new break timer.
 + ~work-timer-default-*~: Variables relevant to the default/basic style of timers.
 + ~work-timer-pomodoro-*~: Variables relevant to the [[https://en.wikipedia.org/wiki/Pomodoro_Technique][Pomodoro]] style of timers.
-+ ~work-timer-fractional-*~: Variables relevant to the "fractional" style of timers. (See [[*Org-pomodoro-third-time][Org-pomodoro-third-time]] for a description of the fractional style of timer.)
-+ ~work-timer-break-surplus-prompt-p~: Whether to prompt for a surplus time (see [[*Concepts][Concepts]] for a description of surplus time) when creating a new timer.[fn:2]
++ ~work-timer-fractional-*~: Variables relevant to the "fractional" style of timers. (See [[#org-pomodoro-third-time][Org-pomodoro-third-time]] for a description of the fractional style of timer.)
++ ~work-timer-break-surplus-prompt-p~: Whether to prompt for a surplus time (see [[#concepts][Concepts]] for a description of surplus time) when creating a new timer.[fn:2]
 
 [fn:2] The prompt is only shown for break/work timer functions that use the ~work-timer--surplus-prompt~ function.
 
@@ -169,7 +169,7 @@ Setting ~work-timer-work-duration-function~ to ~work-timer-work-duration-pomodor
 :CUSTOM_ID: org-pomodoro-third-time
 :END:
 
-Setting ~work-timer-work-duration-function~ to ~work-timer-work-duration-fractional~ and ~work-timer-break-duration-function~ ~work-timer-break-duration-fractional~ will create a workflow similar to org-third-time's workflow. Work timers will be 25 minutes long (~work-timer-fractional-work-duration~ ) and break timers will be 0.2 times (~work-timer-fractional-break-duration-fraction~) the elapsed working timer (read [[*Concepts][Concepts]] for the difference between "durations" and "elapsed times").
+Setting ~work-timer-work-duration-function~ to ~work-timer-work-duration-fractional~ and ~work-timer-break-duration-function~ ~work-timer-break-duration-fractional~ will create a workflow similar to org-third-time's workflow. Work timers will be 25 minutes long (~work-timer-fractional-work-duration~ ) and break timers will be 0.2 times (~work-timer-fractional-break-duration-fraction~) the elapsed working timer (read [[#concepts][Concepts]] for the difference between "durations" and "elapsed times").
 
 * Tips and tricks
 :PROPERTIES:
