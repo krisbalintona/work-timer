@@ -437,7 +437,7 @@ immediately (i.e. PROMPT-DEFAULT if non-nil, otherwise 0)."
                   (work-timer-break-add-surplus-p
                    (work-timer--duration-prompt "Carry over this much time" (or prompt-default 0)))
                   (t 0))))
-    (message "Carried over %s seconds" surplus)
+    (message "[work-timer] Carried over a surplus %s seconds" surplus)
     surplus))
 
 ;;;; Processing timer history
