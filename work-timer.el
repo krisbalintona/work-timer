@@ -675,7 +675,9 @@ clear `work-timer-history'."
         work-timer-pause-time nil
         work-timer-pauses nil
         global-mode-string (remove 'work-timer-mode-line-string global-mode-string))
-  (when clear-history (setq work-timer-history nil))
+  (when clear-history
+    (setq work-timer-history nil)
+    (message "[work-timer] Erased `work-timer-history'"))
   (force-mode-line-update t)
   (work-timer--log "(work-timer-end) Timer ended"))
 
