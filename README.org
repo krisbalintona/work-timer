@@ -212,3 +212,8 @@ If you do not want to save the timer history, feel free to remove ~work-timer-hi
 + Org-timer: built-in org-mode package.
 + [[https://github.com/protesilaos/tmr/][Tmr]]: Protesilaos Stavrou's timer package.
 + [[https://github.com/marcinkoziej/org-pomodoro][org-pomodoro: pomodoro technique for org-mode]]
+
+# Local Variables:
+# eval: (require 'org-make-toc nil t)
+# eval: (setq before-save-hook (push 'org-make-toc before-save-hook))
+# End:
