@@ -276,7 +276,7 @@ the start time of the timer. Should be in the format returned by
           (concat (when (< work-timer-duration 0) "-")
                   (format-seconds work-timer-time-format (abs work-timer-duration))))
          (mode-line-string
-          (format (propertize " [%s: %s/%s]" 'face 'work-timer-mode-line)
+          (format (propertize "[%s: %s/%s] " 'face 'work-timer-mode-line)
                   type-string
                   (if (< work-timer-duration elapsed)
                       (propertize running-string 'face 'org-mode-line-clock-overrun)
