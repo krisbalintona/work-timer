@@ -23,23 +23,26 @@
 
 ;;; Commentary:
 
-;; Work-timer is a flexible package for displaying a timer in the mode line. The
-;; timer counts up, and when it reaches its set duration, a sound is played.
-;; This package stands out by automatically determining the timer duration based
-;; on simple, user-defined functions (with functions for popular use cases
-;; built-in). Notably, these functions can take into account the history of
-;; completed timers, such as their durations and total running time. This makes
-;; for a means to create timers in a DWIM fashion whose durations reliably
-;; conform to your expectations (while allowing for the freedom to deviate when
-;; things don't go according to play).
+;; Work-timer is a flexible package for displaying a timer in the mode
+;; line.  The timer counts up, and when it reaches its set duration, a
+;; sound is played.  This package stands out by automatically
+;; determining the timer duration based on simple, user-defined
+;; functions (with functions for popular use cases built-in).
+;; Notably, these functions can take into account the history of
+;; completed timers, such as their durations and total running time.
+;; This makes for a means to create timers in a DWIM fashion whose
+;; durations reliably conform to your expectations (while allowing for
+;; the freedom to deviate when things don't go according to play).
 
-;; As such, this work-timer is particularly useful for users who want to manage
-;; their work and break periods effectively, such as students aiming to be more
-;; productive. For example, the package makes it easy to work for a target of 25
-;; minutes by creating a "work" timer, then, when taking a break, creating a
-;; "break" timer for 25% of the work time. Moreover, if the user works for only
-;; 15 minutes or even 50 minutes, the break timer can still be 25% of the time
-;; worked (or not, if the user configures the appropriate function to do so).
+;; As such, this work-timer is particularly useful for users who want
+;; to manage their work and break periods effectively, such as
+;; students aiming to be more productive.  For example, the package
+;; makes it easy to work for a target of 25 minutes by creating a
+;; "work" timer, then, when taking a break, creating a "break" timer
+;; for 25% of the work time.  Moreover, if the user works for only 15
+;; minutes or even 50 minutes, the break timer can still be 25% of the
+;; time worked (or not, if the user configures the appropriate
+;; function to do so).
 
 ;;; Code:
 (require 'notifications)
@@ -149,7 +152,7 @@ own function that returns the duration of a break in seconds."
   "Whether to add surplus time for break timers.
 The built-in break duration functions leverage
 `work-timer--surplus-prompt' to prompt then add the surplus time if this
-value is non-nil. User-defined break functions can choose to call
+value is non-nil.  User-defined break functions can choose to call
 `work-timer--surplus-prompt' or incorporate surplus time another way."
   :type 'boolean
   :group 'work-timer)
@@ -158,9 +161,9 @@ value is non-nil. User-defined break functions can choose to call
   "Whether to skip prompting for surplus time for break timers.
 Currently,the built-in break duration functions leverage
 `work-timer--surplus-prompt' to add surplus time (if
-`work-timer-break-add-surplus-p' is non-nil). By default,
+`work-timer-break-add-surplus-p' is non-nil).  By default,
 `work-timer--surplus-prompt' prompts the user to confirm to add the
-surplus time. When this variable is non-nil, the user will not be
+surplus time.  When this variable is non-nil, the user will not be
 prompted and instead the surplus time immediately added."
   :type 'boolean
   :group 'work-timer)
@@ -242,11 +245,11 @@ The log buffer's name is set by `work-timer-log-buffer-name'."
 ;;;; Timers
 (defun work-timer--set-timer (type duration &optional start)
   "Create a timer and set the appropriate variables.
-TYPE is a symbol representing the type of the timer. DURATION is
-a number representing the duration of the timer in seconds.
+TYPE is a symbol representing the type of the timer.  DURATION is a
+number representing the duration of the timer in seconds.
 
-Additionally, the optional argument START can be provided to set
-the start time of the timer. Should be in the format returned by
+Additionally, the optional argument START can be provided to set the
+start time of the timer.  Should be in the format returned by
 `float-time', i.e., a float number of seconds since the epoch."
   (when (timerp work-timer-current-timer)
     (cancel-timer work-timer-current-timer))
@@ -326,12 +329,12 @@ the current timer is reached."
 ;;;; User timer duration prompts
 (defun work-timer--seconds-to-token (time)
   "Un-parse TIME.
-TIME is a number that represents a quantity of seconds. The
-resultant token has a format that follows the one described in
-the docstring of `work-timer--duration-prompt'.
+TIME is a number that represents a quantity of seconds.  The resultant
+token has a format that follows the one described in the docstring of
+`work-timer--duration-prompt'.
 
-This function is useful for setting a human-readable default
-value for `work-timer--duration-prompt'.
+This function is useful for setting a human-readable default value for
+`work-timer--duration-prompt'.
 
 This function is similar to the ones provided by `org-duration'."
   (let* ((time (round time))
@@ -348,10 +351,9 @@ This function is similar to the ones provided by `org-duration'."
 
 (defun work-timer--duration-parse-token (token)
   "Parse TOKEN.
-Token is a string. It should look something like \"10m\" or
-\"100\". Convert that token into a number of seconds. See the
-docstring for `work-timer--duration-prompt' for possible token
-suffixes.
+Token is a string.  It should look something like \"10m\" or \"100\".
+Convert that token into a number of seconds.  See the docstring for
+`work-timer--duration-prompt' for possible token suffixes.
 
 This function allows strings that represent negative numbers, like
 \"-4\", which would be -240 seconds.
@@ -370,27 +372,25 @@ This function is similar to the ones provided by `org-duration'."
 
 (defun work-timer--duration-prompt (&optional prompt default)
   "Prompt the user for a duration.
-Parses the user string and returns the duration in seconds.
-Parsing is done by splitting the user input by spaces and parsing
-each part into a quantity of seconds. The following suffixes are
-recognized:
+Parses the user string and returns the duration in seconds.  Parsing is
+done by splitting the user input by spaces and parsing each part into a
+quantity of seconds.  The following suffixes are recognized:
 - \"s\" for seconds
 - \"m\" for minutes
 - \"h\" for hours
-So, for example, \"10m 20s\" is equivalent to 10 minutes and 20
-seconds, or 620 seconds.
+So, for example, \"10m 20s\" is equivalent to 10 minutes and 20 seconds,
+or 620 seconds.
 
 Any part of the user input that does not end in one of the above
-suffixes is ignored. For instance, \"1TEST\" and \"1h HELLO
-WORLD\" are both effectively read as \"1h\". The only *exception*
-will be when a part of the user input is just a number. In such a
-case, this part is treated as the number of minutes: \"20\" is
-treated as \"20m\".
+suffixes is ignored.  For instance, \"1TEST\" and \"1h HELLO WORLD\" are
+both effectively read as \"1h\".  The only *exception* will be when a
+part of the user input is just a number.  In such a case, this part is
+treated as the number of minutes: \"20\" is treated as \"20m\".
 
 PROMPT is a string. If given, then use that string as the prompt
-instead. If DEFAULT is provided, that will be the default number
-of seconds returned. DEFAULT must be a number (duration in
-seconds seconds) or a string that is just that number.
+instead. If DEFAULT is provided, that will be the default number of
+seconds returned. DEFAULT must be a number (duration in seconds seconds)
+or a string that is just that number.
 
 This function is similar to `org-set-effort' that uses functions
 provided by `org-duration'."
@@ -426,7 +426,7 @@ next timer.
 
 This function will read user input in natural language (e.g. 15 min;
 read the docstring of `work-timer--duration-prompt' for acceptable
-units) and return that time in seconds. PROMPT-DEFAULT will be the
+units) and return that time in seconds.  PROMPT-DEFAULT will be the
 default prompted duration.
 
 If `work-timer-break-add-surplus-p' is nil, then this function returns
@@ -448,13 +448,12 @@ immediately (i.e. PROMPT-DEFAULT if non-nil, otherwise 0)."
 ;;;; Processing timer history
 (defun work-timer--process-history (function predicate &optional history)
   "Process all entries in `work-timer-history'.
-Returns a list whose elements are the return value of FUNCTION
-applied to each entry in `work-timer-history'. Only operate
-on elements that satisfy PREDICATE. Both FUNCTION and PREDICATE
-take one argument, the current entry in `work-timer-history'.
+Returns a list whose elements are the return value of FUNCTION applied
+to each entry in `work-timer-history'.  Only operate on elements that
+satisfy PREDICATE.  Both FUNCTION and PREDICATE take one argument, the
+current entry in `work-timer-history'.
 
-If HISTORY is provided, operate on that instead of
-`work-timer-history'."
+If HISTORY is provided, operate on that instead of `work-timer-history'."
   (cl-loop for entry in (or history work-timer-history)
            when (funcall (or predicate 'identity) entry)
            collect (funcall function entry)))
@@ -567,15 +566,15 @@ work timer. This fraction is determined by the value of
 ;;;###autoload
 (defun work-timer-start (&optional start duration type)
   "Start a work timer.
-Optionally provide START which is a custom start time. See the
-docstring of `work-timer--set-timer' for the acceptable format of
-this argument. If none is provided, the current time is used.
+Optionally provide START which is a custom start time.  See the
+docstring of `work-timer--set-timer' for the acceptable format of this
+argument.  If none is provided, the current time is used.
 
 Optionally provide DURATION which is the duration of the timer in
 seconds.
 
-With `prefix-arg', prompt for the duration of the timer in
-seconds. If nothing is provided, then the function defined in
+With `prefix-arg', prompt for the duration of the timer in seconds.  If
+nothing is provided, then the function defined in
 `work-timer-work-duration-function'.
 
 TYPE overrides the default timer type of `work'."
@@ -637,9 +636,9 @@ that action."
 ;;;###autoload
 (defun work-timer-cycle-finish (&optional manual)
   "Finish the current timer cycle.
-If MANUAL is provided, via argument or `prefix-arg', then
-manually prompt for a duration in seconds. Prompt also accepts
-sexps to calculate the value."
+If MANUAL is provided, via argument or `prefix-arg', then manually
+prompt for a duration in seconds.  Prompt also accepts sexps to
+calculate the value."
   (interactive "^P")
   (unless (timerp work-timer-current-timer)
     (user-error "[work-timer] No timer running!"))
