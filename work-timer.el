@@ -3,7 +3,7 @@
 ;; Copyright (C) 2023-2024  Kristoffer Balintona
 
 ;; Author: Kristoffer Balintona <krisbalintona@gmail.com>
-;; Version: 1.0
+;; Version: 1.1
 ;; Package-Requires: ((emacs "28.1") (compat "29.1.3.0"))
 ;; Keywords: convenience, tools
 ;; URL: https://github.com/krisbalintona/org-work-timer
