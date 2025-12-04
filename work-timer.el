@@ -608,7 +608,9 @@ that action."
     (pcase pause-or-continue
       ('continue
        (when work-timer-pause-time    ; Do nothing if not currently paused
-         (message "Timer continued")
+         (message "Timer continued after a %s pause"
+                  (format-seconds "%.2h:%.2m:%.2s"
+                                  (float-time (time-since work-timer-pause-time))))
          (work-timer--log "(work-timer-pause-or-continue) Timer continued")
          ;; Move back `work-timer-end-time' for how long timer was paused
          (setq work-timer-end-time (float-time
