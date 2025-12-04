@@ -280,9 +280,12 @@ the start time of the timer. Should be in the format returned by
          (mode-line-string
           (format (propertize "[%s: %s/%s] " 'face 'work-timer-mode-line)
                   type-string
-                  (if (< work-timer-duration elapsed)
-                      (propertize running-string 'face 'org-mode-line-clock-overrun)
-                    running-string)
+                  (cond
+                   (work-timer-pause-time
+                    (propertize running-string 'face 'shadow))
+                   ((< work-timer-duration elapsed)
+                    (propertize running-string 'face 'org-mode-line-clock-overrun))
+                   (t running-string))
                   duration-string)))
     (setq work-timer-mode-line-string mode-line-string))
   (force-mode-line-update t))
