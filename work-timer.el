@@ -257,6 +257,8 @@ the start time of the timer. Should be in the format returned by
         work-timer-pauses nil
         work-timer-pause-time nil
         work-timer-overrun-p nil
+        ;; FIXME 2025-12-03: Are we should we should be ticking every
+        ;; second?
         work-timer-current-timer (run-with-timer t 1 'work-timer--tick))
   (work-timer--update-mode-line))
 
